@@ -31,17 +31,17 @@ ban_ui <- function(id){
                            selected = list(1,2,3,4,"Playoffs"))
       ),
       card(
-        card_title("Banrates per hero"),
-        card_body(
-          dataTableOutput(ns("banrates"))
-        )
-      ),
-      card(
         card_header("Ban Rates - Plot"),
         card_body(
           sliderInput(ns("topnBanrates"), "Top N heroes to show",
                       min = 1, max = 20, value = 10),
           plotOutput(ns("banratesVis"))
+        )
+      ),
+      card(
+        card_title("Banrates per hero"),
+        card_body(
+          dataTableOutput(ns("banrates"))
         )
       ),
       card(

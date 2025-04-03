@@ -30,3 +30,4 @@ map_list <- as.list(unique(maps$map_name))
 assign("team_list", team_list, envir = .GlobalEnv)
 assign("hero_list", hero_list, envir = .GlobalEnv)
 assign("map_list", map_list, envir = .GlobalEnv)
+

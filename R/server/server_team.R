@@ -59,21 +59,8 @@ team_server <- function(id, all_data){
     })
     
     pickrates <- reactive({
-      # Calculate total maps directly within this function
-      filtered_data_val <- filtered_data()
-      total_maps_val <- n_distinct(filtered_data_val$match_map_id)
-      
-      # Use the direct value instead of calling the reactive function
-      filtered_data_val |> 
-        distinct(hero_name, match_map_id, role, .keep_all = TRUE) |> 
-        group_by(hero_name, role) |> 
-        summarise(
-          appearances = n(),
-          pickrate = appearances / max(1, total_maps_val), # Using max(1, val) prevents division by zero
-          winrate = mean(iswin)
-        ) |>
-        filter(appearances > 0) |> 
-        arrange(desc(pickrate))
+      pickrates <- calculate_pickrates(filtered_data())
+      return(pickrates)
     })
     
     # Calculations ----------

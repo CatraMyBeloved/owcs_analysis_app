@@ -15,12 +15,15 @@ library(tidyverse)
 library(DT)
 library(rdrop2)
 
+source("R/server/server_shared.R")
+source("R/ui/ui_shared.R")
 
 #Load all R files in a folder, in order to load all modules
 source_files <- function(dir) {
   files <- list.files(dir, pattern = "\\.R$", full.names = TRUE)
   lapply(files, source)
 }
+
 
 
 app_data <- reactiveValues(

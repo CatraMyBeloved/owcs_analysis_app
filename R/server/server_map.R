@@ -76,6 +76,11 @@ map_server <- function(id, all_data){
     
     # Calculations -----------
     
+    general_pickrates <- reactive({
+      pickrates <- calculate_pickrates(filtered_data_by_maps())
+      return(pickrates)
+    })
+    
     teams_in_region <- reactive({
       # Get region filter from input
       selected_regions <- input$regionFilter
@@ -114,45 +119,60 @@ map_server <- function(id, all_data){
     })
     
     total_pickrates_for_maps <- reactive({
-      filtered_data_by_maps() |> 
+      res <- filtered_data_by_maps() |> 
         group_by(map_name, hero_name, role) |> 
         summarize(all_appearances= n(),
                   hero_played = n_distinct(match_map_id),
                   hero_wins = sum(iswin),
                   .groups = "drop") |> 
         left_join(total_n_played(), by = "map_name") |>
-        mutate(pickrate = hero_played / n_played,
+        mutate(map_pickrate = hero_played / n_played,
                winrate = hero_wins / all_appearances) |> 
-        arrange(desc(pickrate))
+        arrange(desc(map_pickrate)) 
     })
+    
+    pickrate_comparison <- reactive({
+      
+      res2 <- total_pickrates_for_maps() |> 
+        filter(map_name == input$mapFilter) |> 
+        left_join(general_pickrates(), by = c("hero_name", "role")) |> 
+        mutate(pickrate_diff = map_pickrate - pickrate)
+
+    })
+
     
     # Outputs -----------
     
     output$Pickrates <- renderDT({
-      total_pickrates_for_maps() |> 
-        filter(map_name == input$mapFilter) |> 
-        select(hero_name, hero_played, pickrate, winrate) |> 
+      pickrate_comparison() |> 
+        select(hero_name, hero_played, map_pickrate,  pickrate_diff, winrate.x) |> 
         datatable(
           colnames = c("Hero", "Appearances on map",
-                       "Pickrate", "Winrate"),
+                       "Pickrate", "Difference to avg","Winrate"),
           filter = "top",
           options = list(
             searching = TRUE, 
             pageLength = 10,
             autoWidth = TRUE
           )) |>
-        formatPercentage("pickrate", digits = 1) |> 
-        formatPercentage("winrate", digits = 1)
+        formatPercentage("map_pickrate", digits = 1) |> 
+        formatPercentage("winrate.x", digits = 1) |> 
+        formatPercentage("pickrate_diff", digits = 1)
+      
     })
     
     output$PickratesVis <- renderPlot({
-      total_pickrates_for_maps() |> 
-        filter(map_name == input$mapFilter) |> 
-        head(input$topnPickrates) |> 
-        ggplot(aes(x = reorder(hero_name, pickrate), y = pickrate, fill = role)) +
-        geom_col() + 
-        labs(x = "Hero", y = "Pickrate (%)") + 
-        coord_flip() 
+      pickrate_comparison() |> 
+        arrange(desc(abs(pickrate_diff))) |> 
+        head(input$topnPickrates) |>
+        mutate(pickrate_diff = pickrate_diff * 100) |>
+        ggplot(aes(x = reorder(hero_name, abs(pickrate_diff)), y = pickrate_diff, fill = pickrate_diff > 0)) +
+        geom_col() +
+        scale_fill_manual(values = c("#FF9E7A", "#7AB8FF"), 
+                          labels = c("Below Average", "Above Average"),
+                          name = "Pickrate") +
+        labs(x = "Hero", y = "Pickrate difference (pp)") +
+        coord_flip()
     })
     
     output$filteredMatches <- renderDT({

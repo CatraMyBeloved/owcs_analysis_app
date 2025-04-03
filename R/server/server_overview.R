@@ -42,16 +42,8 @@ overview_server <- function(id, all_data) {
     })
     
     pickrates <- reactive({
-      filtered_data() |> 
-        distinct(hero_name, match_map_id, role, .keep_all = TRUE) |> 
-        group_by(hero_name, role) |> 
-        summarise(
-          appearances = n(),
-          pickrate = appearances/total_maps(),
-          winrate = mean(iswin)
-        ) |>
-        filter(appearances > 0) |> 
-        arrange(desc(pickrate))
+      pickrates <- calculate_pickrates(filtered_data())
+      return(pickrates)
     })
     
     # Outputs

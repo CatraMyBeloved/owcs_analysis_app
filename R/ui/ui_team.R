@@ -37,17 +37,17 @@ team_ui <- function(id) {
         
       ),
       card(
-        card_header("Team pickrates"),
-        card_body(
-          dataTableOutput(ns("Pickrates"))
-        )
-      ),
-      card(
         card_header("Team pickrates - Plot"),
         card_body(
           sliderInput(ns("topnPickrates"), "Top N heroes to show",
                       min = 1, max = 20, value = 10),
           plotOutput(ns("PickratesVis"))
+        )
+      ),
+      card(
+        card_header("Team pickrates"),
+        card_body(
+          dataTableOutput(ns("Pickrates"))
         )
       ),
       card(

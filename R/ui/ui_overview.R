@@ -34,17 +34,17 @@ overview_ui <- function(id) {
                            selected = list("tank", "sup", "dps"))
       ),
       card(
-        card_header("General Pickrates"),
-        card_body(
-          dataTableOutput(ns("Pickrates"))
-        )
-      ),
-      card(
         card_header("General Pickrates - Plot"),
         card_body(
           sliderInput(ns("topnPickrates"), "Top N heroes to show",
                       min = 1, max = 20, value = 10),
           plotOutput(ns("PickratesVis"))
+        )
+      ),
+      card(
+        card_header("General Pickrates"),
+        card_body(
+          dataTableOutput(ns("Pickrates"))
         )
       )
     )

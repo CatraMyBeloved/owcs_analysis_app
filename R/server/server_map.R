@@ -7,7 +7,20 @@
 #' Date Created: 03-04-2025
 #' Last Modified: 02-04-2025
 #' -----------------------------------------------------------------------------
-
+#' Map Analysis Server Module
+#' 
+#' @description Handles the server-side logic for analyzing hero performance and
+#'   usage on specific maps.
+#'
+#' @param id The module ID used for namespacing
+#' @param all_data Reactive data frame containing match and hero usage data
+#'
+#' @details This module filters data by map and other criteria (week, role, region,
+#'   team) to show which heroes are commonly used on each map. Calculates pickrates
+#'   and winrates for heroes on the selected map. Includes dynamic team filtering
+#'   based on region selection and visualizes the top heroes for each map.
+#'
+#' @return A Shiny module server function that handles map-specific analysis
 
 map_server <- function(id, all_data){
   moduleServer(id, function(input, output, session){

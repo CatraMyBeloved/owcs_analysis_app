@@ -8,7 +8,21 @@
 #' Date Created: 03-04-2025
 #' Last Modified: 02-04-2025
 #' -----------------------------------------------------------------------------
-
+#' Composition Analysis Server Module
+#' 
+#' @description Handles the server-side logic for team composition analysis,
+#'   allowing users to examine hero combinations used by teams.
+#'
+#' @param id The module ID used for namespacing
+#' @param all_data Reactive data frame containing hero compositions and match data
+#'
+#' @details This module filters match data based on user selections (week, mode,
+#'   region, team, map) and processes it to identify team compositions. It groups
+#'   heroes by role (tank, DPS, support) and counts the frequency of specific
+#'   compositions. Includes dynamic team filtering based on region selection and
+#'   displays filtered matches.
+#'
+#' @return A Shiny module server function that handles composition analysis logic
 
 server_composition <- function(id, all_data){
   moduleServer(id, function(input, output, session){

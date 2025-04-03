@@ -8,6 +8,20 @@
 #' Last Modified: 02-04-2025
 #' -----------------------------------------------------------------------------
 
+#' Ban Analysis Server Module
+#' 
+#' @description Handles the server-side logic for the ban analysis page, including
+#'   data filtering, calculations, and output rendering.
+#'
+#' @param id The module ID
+#' @param all_bans Reactive data frame containing ban information
+#'
+#' @details This module creates filtered datasets based on user inputs and
+#'   generates visualizations and tables showing hero ban rates across matches.
+#'   It includes calculations for first bans vs. second bans and updates available
+#'   team filters based on selected regions.
+#'
+#' @return A Shiny module server function
 
 
 ban_server <- function(id, all_bans){

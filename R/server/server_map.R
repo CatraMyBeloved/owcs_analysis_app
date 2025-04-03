@@ -161,15 +161,22 @@ map_server <- function(id, all_data){
       
     })
     
+    color_helper <- function(number){
+      if(number < 0){
+        return("neg")
+      } else{
+        return("pos")
+      }
+    }
+    
     output$PickratesVis <- renderPlot({
       pickrate_comparison() |> 
         arrange(desc(abs(pickrate_diff))) |> 
         head(input$topnPickrates) |>
         mutate(pickrate_diff = pickrate_diff * 100) |>
-        ggplot(aes(x = reorder(hero_name, abs(pickrate_diff)), y = pickrate_diff, fill = pickrate_diff > 0)) +
+        ggplot(aes(x = reorder(hero_name, abs(pickrate_diff)), y = pickrate_diff, fill = ifelse(pickrate_diff < 0, "Below Average", "Above Average"))) +
         geom_col() +
-        scale_fill_manual(values = c("#FF9E7A", "#7AB8FF"), 
-                          labels = c("Below Average", "Above Average"),
+        scale_fill_manual(values = c("Below Average" =  "#FF9E7A", "Above Average" = "#7AB8FF"), 
                           name = "Pickrate") +
         labs(x = "Hero", y = "Pickrate difference (pp)") +
         coord_flip()

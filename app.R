@@ -1,4 +1,12 @@
-# app.R
+#' -----------------------------------------------------------------------------
+#' app.R
+#' 
+#' Description: Main app file, combining ui layout and server calls
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
 
 # Load required libraries
 library(shiny)

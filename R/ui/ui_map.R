@@ -1,3 +1,14 @@
+#' -----------------------------------------------------------------------------
+#' ui_map.R
+#' 
+#' Description: Contains UI elements and layout for map analysis page
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
+
+
 map_ui <- function(id){
   ns <- NS(id)
   

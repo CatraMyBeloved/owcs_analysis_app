@@ -1,8 +1,14 @@
-# Server logic for Team Analysis module
-# 
-# This module handles the data processing and calculations related to
-# team-specific hero selection patterns and comparisons between teams.
-# It powers the Team Analysis tab in the application.
+#' -----------------------------------------------------------------------------
+#' server_team.R
+#' 
+#' Description: Server function for team analysis, backbone of team
+#'  analysis page.
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
+
 
 team_server <- function(id, all_data){
   moduleServer(id, function(input, output, session){

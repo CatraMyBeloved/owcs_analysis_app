@@ -1,4 +1,12 @@
-# R/ui/ui_overview.R
+#' -----------------------------------------------------------------------------
+#' up_overview.R
+#' 
+#' Description: Contains UI elements and layout for overview analysis page
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
 
 overview_ui <- function(id) {
   ns <- NS(id)

@@ -1,3 +1,14 @@
+#' -----------------------------------------------------------------------------
+#' server_map.R
+#' 
+#' Description: Server function for map analysis, backbone of map analysis page.
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
+
+
 map_server <- function(id, all_data){
   moduleServer(id, function(input, output, session){
     

@@ -1,3 +1,15 @@
+#' -----------------------------------------------------------------------------
+#' update.R
+#' 
+#' Description: Script to download current state of the spreadsheet and turn it 
+#' into tables
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
+
+
 library(rvest)
 library(tidyverse)
 url <- "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTkWc3-NK0HtsOjipS8cqYMJRTddCSgecM-KD4wbNSpdjDJcpaYt-E-N8jU6j13CefwHGZ3I22SV-x/pubhtml"

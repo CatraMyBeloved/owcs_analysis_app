@@ -1,6 +1,16 @@
+#' -----------------------------------------------------------------------------
+#' aws_helpers.R
+#' 
+#' Description: Contains helper functions to interact with AWS S3 storage for
+#'  persistent data storage
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
+
+
 library(aws.s3)
-
-
 
 
 download_from_s3 <- function(bucket, key, local_path = NULL) {

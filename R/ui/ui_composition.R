@@ -1,3 +1,14 @@
+#' -----------------------------------------------------------------------------
+#' ui_composition.R
+#' 
+#' Description: Contains UI elements and layout for composition analysis page
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
+
+
 composition_ui <- function(id) {
   ns <- NS(id)
   

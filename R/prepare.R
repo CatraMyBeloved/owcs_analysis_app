@@ -1,4 +1,13 @@
-# Authenticate using saved token
+#' -----------------------------------------------------------------------------
+#' prepare.R
+#' 
+#' Description: Preparation file thats run once on startup. Downloads data from
+#' AWS storage and creates necessary variables.
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
 
 download_success <- download_from_s3("owcs-analysis", "esports_data.RData", "./data/esports_data.RData")
 

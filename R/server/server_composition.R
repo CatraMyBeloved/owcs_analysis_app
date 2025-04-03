@@ -1,3 +1,15 @@
+#' -----------------------------------------------------------------------------
+#' server_composition.R
+#' 
+#' Description: Server function for composition analysis, backbone of composition
+#'  analysis page.
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
+
+
 server_composition <- function(id, all_data){
   moduleServer(id, function(input, output, session){
     

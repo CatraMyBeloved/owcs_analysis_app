@@ -1,4 +1,12 @@
-#Team panel ----------
+#' -----------------------------------------------------------------------------
+#' ui_team.R
+#' 
+#' Description: Contains UI elements and layout for team analysis page
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
 
 team_ui <- function(id) {
   ns <- NS(id)

@@ -1,6 +1,13 @@
-# Ban page server module
-# This module handles data filtering and analysis related to hero bans.
-# Backend for the "Ban Analysis" tab in the app.
+#' -----------------------------------------------------------------------------
+#' server_ban.R
+#' 
+#' Description: Server function for ban analysis, backbone of ban analysis page.
+#' 
+#' Author: CatraMyBeloved
+#' Date Created: 03-04-2025
+#' Last Modified: 02-04-2025
+#' -----------------------------------------------------------------------------
+
 
 
 ban_server <- function(id, all_bans){

@@ -37,6 +37,9 @@ map_ui <- function(id){
         card_header("Hero pickrates on selected map - Plot"),
         sliderInput(ns("topnPickrates"), "Top N heroes to show",
                     min = 1, max = 20, value = 10),
+        radioButtons(ns("comparisonType"), "Comparison Type",
+                     choices = c("vs All Maps" = "all_maps", 
+                                 "vs This Map (All Teams) (Select team first)" = "selected_map")),
         plotOutput(
           ns("PickratesVis")
         )

@@ -1,0 +1,17 @@
+---
+title: "TODOs"
+output: html_document
+---
+
+# TODO
+
+## Structure
+
+-   Move filter logic to shared files
+-   Potentially revamp visualization to shared files
+
+## Analysis / Visualization
+
+-   Add "vs other teams" and "vs general pickrates" to map analysis visualization
+-   Recreate team analysis to act as a team dashboard (team preferences, notable hero preferences, overall team stats) since map and team analysis page essentially have the same function right now, just with map analysis having more filters
+-   Add interactions page to analyse hero interactions (good and bad matchups)

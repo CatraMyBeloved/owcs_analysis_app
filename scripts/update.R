@@ -108,6 +108,8 @@ new_match_maps <- combined_data |>
 
 new_rounds <- combined_data |>
   select(date, t1_round, t1_team, t2_team, map, t1_result, t2_result) |> 
+  mutate(round_unique_id = paste(date, map, t1_team, t2_team, t1_round, 
+                                 t1_result, t2_result, sep = "_")) |>
   left_join(maps, c("map" = "map_name")) |> 
   left_join(teams, c("t1_team" = "team_name")) |> 
   rename(t1_id = team_id) |> 
@@ -115,9 +117,9 @@ new_rounds <- combined_data |>
   rename(t2_id = team_id) |> 
   left_join(matches, c("date", "t1_id" = "team1_id", "t2_id" = "team2_id")) |> 
   left_join(match_maps, c("match_id", "map_id")) |> 
-  select(t1_result, t2_result, match_map_id, mode, t1_round, map_win_team_id) |> 
+  select(t1_result, t2_result, match_map_id, mode, t1_round, map_win_team_id, round_unique_id) |> 
   rename(name = t1_round) |> 
-  mutate(round_id = row_number()) |> 
+  mutate(round_id = row_number()) |>
   mutate(t1_result = case_when(
     grepl("\\(W\\)", t1_result) ~ str_remove(t1_result, "\\(W\\)"),
     .default = t1_result)
@@ -142,7 +144,12 @@ new_rounds <- combined_data |>
   ungroup()  |> 
   select(-map_win_team_id, -mode)
 
-new_hero_composition <- combined_data |> select(-vod_link, -patch_date, -bracket, -week, -t1_result, -t2_result, -vs, -t2_round, -first_ban_team, -first_ban_hero, -second_ban_team,-second_ban_hero,-region) |> 
+new_hero_composition <- combined_data |> 
+  # Create the same unique round identifier
+  mutate(round_unique_id = paste(date, map, t1_team, t2_team, t1_round, 
+                                 t1_result, t2_result, sep = "_")) |>
+  select(-vod_link, -patch_date, -bracket, -week, -vs, -t2_round, 
+         -first_ban_team, -first_ban_hero, -second_ban_team, -second_ban_hero, -region) |> 
   left_join(teams, c("t1_team" = "team_name")) |> 
   rename(t1_id = team_id) |> 
   left_join(teams, c("t2_team" = "team_name")) |> 
@@ -158,10 +165,13 @@ new_hero_composition <- combined_data |> select(-vod_link, -patch_date, -bracket
   mutate(role = str_remove(role, "t[12]_")) |> 
   left_join(matches, c("date", "t1_id" = "team1_id", "t2_id" = "team2_id")) |> 
   left_join(match_maps, c("match_id", "map_id")) |> 
-  left_join(rounds, c("match_map_id", "t1_round" = "name"), relationship = "many-to-many") |> 
+  # Join with the rounds table using our unique identifier
+  left_join(new_rounds |> select(round_id, round_unique_id), by = "round_unique_id") |> 
   left_join(heroes, c("hero_name")) |> 
   mutate(hero_comp_id = row_number()) |> 
-  select(hero_comp_id, round_id, hero_id, team)
+  select(hero_comp_id, round_id, hero_id, team) |>
+  # Remove any potential duplicates 
+  distinct()
 
 new_bans <- combined_data |>
   select(date, t1_team, t2_team, map, first_ban_team, first_ban_hero, second_ban_team, second_ban_hero) |> 

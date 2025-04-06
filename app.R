@@ -128,14 +128,14 @@ server <- function(input, output, session) {
         
       } else {
         # Move downloaded data into reactive storage
-        appData$hero_composition <- new_hero_composition
-        appData$heroes <- new_heroes
-        appData$maps <- new_maps
-        appData$match_maps <- new_match_maps
-        appData$matches <- new_matches
-        appData$rounds <- new_rounds
-        appData$teams <- new_teams
-        appData$bans <- new_bans
+        app_data$hero_composition <- new_hero_composition
+        app_data$heroes <- new_heroes
+        app_data$maps <- new_maps
+        app_data$match_maps <- new_match_maps
+        app_data$matches <- new_matches
+        app_data$rounds <- new_rounds
+        app_data$teams <- new_teams
+        app_data$bans <- new_bans
       }
       
       hero_composition <- new_hero_composition
@@ -150,7 +150,7 @@ server <- function(input, output, session) {
       save(teams, maps, heroes, matches, match_maps, rounds, hero_composition, bans, 
            file = "./data/esports_data.Rdata")
       
-      upload_to_s3("owcs-analysis", "./data/esports_data.RData", key = "esports_data.RData")
+      upload_success <- upload_to_s3("owcs-analysis", "./data/esports_data.RData", key = "esports_data.RData")
       if (upload_success) {
         
         removeModal()

@@ -27,6 +27,8 @@ interaction_ui <- function(id) {
                                           "Playoffs"),
                            selected = list(1,2,3,4,"Playoffs"))
       ),
+      headerPanel("Synergy and Counters"),
+      
     card(
       card_header("Hero Selection"),
       card_body(
@@ -46,10 +48,13 @@ interaction_ui <- function(id) {
                  ),
           column(width = 4,
                  sliderInput(ns("nHeroesFilter"),
-                             "Number heroes to show",
+                             "Heroes to show",
                              min = 1, max = 20, value = 10)
                  ),
-          plotOutput(ns("posSynergyVis"))
+          card_title("Synergy"),
+          plotOutput(ns("synergyVis")),
+          card_title("Counters"),
+          plotOutput(ns("counterVis"))
           )
         )
       )

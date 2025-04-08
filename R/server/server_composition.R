@@ -24,7 +24,7 @@
 #'
 #' @return A Shiny module server function that handles composition analysis logic
 
-server_composition <- function(id, all_data){
+composition_server <- function(id, all_data){
   moduleServer(id, function(input, output, session){
     
     filtered_data <- reactive({

@@ -85,11 +85,11 @@ ui <- page_fluid(
   navset_card_tab(
     # Call each UI module
     overview_ui("overview"),
-    team_ui("team"),
     map_ui("map"),
+    interaction_ui("interaction"),
     composition_ui("composition"),
     ban_ui("ban"),
-    
+    team_ui("team"),
     nav_item(
       input_dark_mode(id = "dark_mode", mode = "dark")
     )
@@ -157,7 +157,7 @@ server <- function(input, output, session) {
         showNotification("Data successfully updated!", type = "message")
         
       } else {
-        
+          
         removeModal()
         showNotification("Failed to upload updated data", type = "error")
         
@@ -172,8 +172,9 @@ server <- function(input, output, session) {
   overview_server("overview", all_data_reactive())
   team_server("team", all_data_reactive())
   map_server("map", all_data_reactive())
-  server_composition("composition", all_data_reactive())
+  composition_server("composition", all_data_reactive())
   ban_server("ban", all_bans_reactive())
+  interaction_server("interaction", all_data_reactive())
 }
 
 # Run the application

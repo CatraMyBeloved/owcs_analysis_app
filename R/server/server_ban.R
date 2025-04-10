@@ -184,7 +184,6 @@ ban_server <- function(id, all_bans){
           title = "Hero Ban Rates"
         ) +
         coord_flip() +
-        theme_minimal() +
         scale_y_continuous(labels = scales::percent) +
         guides(fill = guide_legend(reverse = TRUE))
     })

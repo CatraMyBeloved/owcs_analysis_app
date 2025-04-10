@@ -145,7 +145,7 @@ team_server <- function(id, all_data){
         mutate(pickrate_diff = pickrate_diff * 100) |>
         ggplot(aes(x = reorder(hero_name, abs(pickrate_diff)), y = pickrate_diff, fill = pickrate_diff > 0)) +
         geom_col() +
-        scale_fill_manual(values = c("#FF9E7A", "#7AB8FF"), 
+        scale_fill_manual(values = c("#ed946b", "#6bebed"), 
                           labels = c("Below Average", "Above Average"),
                           name = "Pickrate") +
         labs(x = "Hero", y = "Pickrate difference (pp)") +

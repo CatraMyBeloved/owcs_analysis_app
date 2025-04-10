@@ -14,6 +14,7 @@ library(bslib)
 library(tidyverse)
 library(DT)
 library(rdrop2)
+library(RColorBrewer)
 
 source("R/server/server_shared.R")
 source("R/ui/ui_shared.R")
@@ -87,7 +88,6 @@ ui <- page_fluid(
     overview_ui("overview"),
     map_ui("map"),
     interaction_ui("interaction"),
-    composition_ui("composition"),
     ban_ui("ban"),
     team_ui("team"),
     nav_item(
@@ -172,7 +172,6 @@ server <- function(input, output, session) {
   overview_server("overview", all_data_reactive())
   team_server("team", all_data_reactive())
   map_server("map", all_data_reactive())
-  composition_server("composition", all_data_reactive())
   ban_server("ban", all_bans_reactive())
   interaction_server("interaction", all_data_reactive())
 }

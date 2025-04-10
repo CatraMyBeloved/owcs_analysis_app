@@ -62,11 +62,19 @@ overview_server <- function(id, all_data) {
     })
     
     output$PickratesVis <- renderPlot({
+      
+      role_colors <- c(
+        "tank" = "#FFCF59",    # red
+        "sup" = "#4496B5",    # blue
+        "dps" = "#FF7659"  # green
+      )
+      
       pickrates() |> 
         mutate(pickrate = pickrate * 100) |> 
         head(input$topnPickrates) |> 
         ggplot(aes(x = reorder(hero_name, pickrate), y = pickrate, fill = role)) +
         geom_col() + 
+        scale_fill_manual(values = role_colors)+
         labs(x = "Hero", y = "Pickrate (%)") + 
         coord_flip() 
     })

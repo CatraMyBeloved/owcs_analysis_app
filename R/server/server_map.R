@@ -208,7 +208,7 @@ map_server <- function(id, all_data){
                    y = .data[[comparison_column]],
                    fill = .data[[comparison_column]] < 0)) +
         geom_col() +
-        scale_fill_manual(values = c("FALSE" = "#f09f71", "TRUE" = "#89aff5"),
+        scale_fill_manual(values = c("FALSE" = "#ed946b", "TRUE" = "#6bebed"),
                           labels = c("TRUE" = "Below Average", "FALSE" = "Above Average")) +
         coord_flip() +
         labs(title = title,

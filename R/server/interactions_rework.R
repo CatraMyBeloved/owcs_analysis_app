@@ -49,34 +49,58 @@ interaction_server <- function(id, all_data){
       return(comps_with_opponents)
     })
     
-    comps_with_indicators <-reactive({
-      
-      compositions_indicator <- comps_with_opponents()
-      
-      column_names_team <- paste0("has_", hero_list)
-      column_names_opp <- paste0("has_", hero_list, "_opp")
-      
-      compositions_indicator[column_names_team]<- 0
-      compositions_indicator[column_names_opp] <- 0
-      
-      compositions_indicator <- compositions_indicator |> 
-        rowwise() |> 
-        mutate(all_heroes_team = list(c(tank, unlist(dps), unlist(sup))),
-               all_heroes_opp = list(c(tank_opp, unlist(dps_opp), unlist(sup_opp))))
-      
-     
-      
-      compositions_indicator <- compositions_indicator |> 
-        mutate(across(starts_with("has_") & !contains("_opp"), 
-                      ~str_detect(all_heroes_team, str_remove(cur_column(), "has_"))),
-               across(starts_with("has_") & contains("_opp"),
-                      ~str_detect(all_heroes_opp, str_remove(cur_column(), "has_") |> 
-                                    str_remove("_opp"))))
-      
     
-    return(comps_with_indicators)
-  })
+    create_hero_matrix <- function(compositions, all_heroes){
+      all_heroes <- c(unlist(all_heroes))
+      n_rows <- nrow(compositions)
+      n_columns <- lenght(all_heroes)
+      
+      team_matrix <- matrix(FALSE, nrow = n_rows, ncol = n_columns)
+      opp_matrix <- matrix(FALSE, nrow = n_rows, ncol = n_columns)
+      
+      colnames(team_matrix) <- all_heroes
+      colnames(opp_matrix) <- all_heroes
+      
+      for(i in 1:n_rows){
+        team_heroes <- c(compositions$tank[i], 
+                         unlist(compositions$dps[i]), 
+                         unlist(compositions$sup[i]))
+        
+        opp_heroes <- c(compositions$tank_opp[i],
+                        unlist(compositions$dps_opp[i]),
+                        unlist(compositions$sup_opp[i]))
+        
+        team_matrix[i, match(team_heroes, all_heroes)] <- TRUE
+        opp_matrix[i, match(opp_heroes, all_heroes)] <- TRUE
+      }
+      team_df <- as.data.frame(team_matrix)
+      opp_df <- as.data.frame(opp_matrix)
+      
+      names(team_df) <- paste0("has_", names(team_df))
+      names(opp_df) <- paste0("has_", names(opp_df), "_opp")
+      
+      result <- bind_cols(compositions, team_df, opp_df)
+      
+      return(result)
+    }
     
+    comps_with_indicators <- reactive({
+      result <- create_hero_matrix(comps_with_opponents(), hero_list)
+      return(result)
+    })
+    
+    popular_combinations <- reactive({
+      
+      selected_hero <- input$heroFilterSel
+      column_name_selected <- paste0("has_", selected_hero)
+      
+      popular_combinations |> 
+        filter(.data[[column_name_selected]]) |> 
+        summarize(
+          across(starts_with("has_") & !contain("_opp"),
+                 mean)
+        )
+    })
   })
 }
       

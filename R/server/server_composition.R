@@ -27,6 +27,7 @@
 composition_server <- function(id, all_data){
   moduleServer(id, function(input, output, session){
     
+# ----------- Filtering ----------
     filtered_data <- reactive({
       filtered_data <- all_data |> 
         filter(week %in% input$weekFilter,
@@ -87,65 +88,24 @@ composition_server <- function(id, all_data){
       
       return(filtered_matches)
     })
+#---------- Calculations ----------
     
-    
-    #Calculations ----------
-    
-    teams_in_region <- reactive({
-      # Get region filter from input
-      selected_regions <- input$regionFilter
-      
-      # Filter teams based on selected regions
-      filtered_teams <- teams %>%
-        filter(region %in% selected_regions) %>%
-        pull(team_name)
-      
-      # Return as a named list for selectInput
-      setNames(as.list(filtered_teams), filtered_teams)
+    comps <- reactive({
+      result <- comps_func(filtered_data())
+      return(result)
     })
     
-    observeEvent(input$regionFilter, {
-      # Get filtered teams
-      teams_list <- teams_in_region()
-      
-      # Handle case when no teams match (provide a placeholder)
-      if(length(teams_list) == 0) {
-        teams_list <- list("No teams available" = "")
-      }
-      
-      # Update the select input
-      updateSelectInput(
-        inputId = session$ns("teamFilter"),
-        choices = c("All" = "All",teams_list),
-        # Try to maintain current selection if it's still valid
-        selected = if(input$teamFilter %in% names(teams_list)) input$teamFilter else NULL
-      )
+    comps_with_opponents <- reactive({
+      comps_with_opponents <- comps_with_opponents_func(comps())
+      return(comps_with_opponents)
     })
     
-    compositions <- reactive({
-      filtered_data() |> 
-        group_by(match_map_id, round_id, team_name) |> 
-        reframe(
-          tank = hero_name[role == "tank"],
-          dps = paste(head(sort(unique(hero_name[role == "dps"])), 2), collapse = ", "),
-          sup = paste(head(sort(unique(hero_name[role == "sup"])), 2), collapse = ", ")
-        )
+    comp_with_indicators <- reactive({
+      result <- create_hero_matrix(comps_with_opponents(), hero_list)
+      return(result)
     })
     
-    composition_counts <- reactive({
-      compositions() |> 
-        count(!!!syms(input$roleSelection), name = "n_played") 
-    })
-    
-    output$compositions <- renderDT(
-      datatable(composition_counts() |> arrange(desc(n_played)),
-                colnames = c(input$roleSelection, "Rounds played"),
-                options = list(
-                  searching = TRUE, 
-                  pageLength = 10,
-                  autoWidth = TRUE
-                )) 
-    )
+#---------- Outputs -----------
     
     output$filteredMatches <- renderDT({
       filtered_matches() |> 

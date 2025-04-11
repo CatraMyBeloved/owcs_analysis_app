@@ -1,86 +1,93 @@
 interaction_server <- function(id, all_data){
   moduleServer(id, function(input, output, session){
     
-  filtered_data <- reactive({
-    filtered_data <- all_data |> 
-      filter(week %in% input$weekFilter,
-             region %in% input$regionFilter) 
-  
+    filtered_data <- reactive({
+      filtered_data <- all_data |> 
+        filter(week %in% input$weekFilter,
+               region %in% input$regionFilter) 
+      
+      
+      if(input$teamFilter != "All"){
+        filtered_data <- filtered_data |> filter(team_name == input$teamFilter)
+      } 
+      
+      return(filtered_data)
+    })
     
-    if(input$teamFilter != "All"){
-      filtered_data <- filtered_data |> filter(team_name == input$teamFilter)
-    } 
-    
-    return(filtered_data)
-  })
-  
-  compositions <- reactive({
-    filtered_data() |> 
-      group_by(match_map_id, round_id, team_name) |> 
-      reframe(
-        tank = hero_name[role == "tank"],
-        dps = paste(head(sort(unique(hero_name[role == "dps"])), 2), collapse = ", "),
-        sup = paste(head(sort(unique(hero_name[role == "sup"])), 2), collapse = ", "),
-        iswin = mean(iswin)
+    comps <- reactive({
+      filtered_data() |> 
+        group_by(match_map_id, round_id, team_name) |> 
+        reframe(
+          tank = hero_name[role == "tank"],
+          dps = list(head(hero_name[role == "dps"], 2)),
+          sup = list(head(hero_name[role == "sup"], 2)),
+          iswin = mean(iswin)
         ) 
-  })
-  
-  compositions_with_opponents <- reactive({
-    base_comps <- compositions()
+    })
     
-    compositions_with_teamid <- 
-      base_comps |> 
-      group_by(round_id) |> 
-      mutate(teamid = row_number()) |> 
-      ungroup()
-    
-    comps_with_opponents <- 
-      compositions_with_teamid |> 
-      inner_join(
+    comps_with_opponents <- reactive({
+      base_comps <- comps()
+      
+      compositions_with_teamid <- 
+        base_comps |> 
+        group_by(round_id) |> 
+        mutate(teamid = row_number()) |> 
+        ungroup()
+      
+      comps_with_opponents <- 
         compositions_with_teamid |> 
-          select(round_id, teamid, team_name, 
-                 tank, dps, sup),
-        by = "round_id",
-        suffix = c("", "_opp"),
-        relationship = "many-to-many"
-      ) |> 
-      filter(teamid != teamid_opp)
-    
-    return(comps_with_opponents)
-  })
-  
-  comp_with_indicators <- reactive({
-    
-    compositions_indicator <- compositions_with_opponents() |> 
-      mutate(
-        dps_list = str_split(dps, ", "),
-        sup_list = str_split(sup, ", "),
-        dps_list_opp = str_split(dps_opp, ", "),
-        sup_list_opp = str_split(sup_opp, ", ")
-      ) 
-    
-    for(hero in hero_list){
+        inner_join(
+          compositions_with_teamid |> 
+            select(round_id, teamid, team_name, 
+                   tank, dps, sup),
+          by = "round_id",
+          suffix = c("", "_opp"),
+          relationship = "many-to-many"
+        ) |> 
+        filter(teamid != teamid_opp)
       
-      column_name <-  paste0("has_", hero)
-      column_name_opp <- paste0(column_name, "_opp")
+      return(comps_with_opponents)
+    })
+    
+    
+    create_hero_matrix <- function(compositions, all_heroes){
+      all_heroes <- c(unlist(all_heroes))
+      n_rows <- nrow(compositions)
+      n_columns <- length(all_heroes)
       
-      compositions_indicator[[column_name]] <- 
-        (compositions_indicator$tank == hero) |
-        sapply(compositions_indicator$dps_list, function(x) hero %in% x) |
-        sapply(compositions_indicator$sup_list, function(x) hero %in% x)
+      team_matrix <- matrix(FALSE, nrow = n_rows, ncol = n_columns)
+      opp_matrix <- matrix(FALSE, nrow = n_rows, ncol = n_columns)
       
-      compositions_indicator[[column_name_opp]] <- 
-        (compositions_indicator$tank_opp == hero) |
-        sapply(compositions_indicator$dps_list_opp, function(x) hero %in% x) |
-        sapply(compositions_indicator$sup_list_opp, function(x) hero %in% x)
+      colnames(team_matrix) <- all_heroes
+      colnames(opp_matrix) <- all_heroes
+      
+      for(i in 1:n_rows){
+        team_heroes <- c(compositions$tank[i], 
+                         unlist(compositions$dps[i]), 
+                         unlist(compositions$sup[i]))
+        
+        opp_heroes <- c(compositions$tank_opp[i],
+                        unlist(compositions$dps_opp[i]),
+                        unlist(compositions$sup_opp[i]))
+        
+        team_matrix[i, match(team_heroes, all_heroes)] <- TRUE
+        opp_matrix[i, match(opp_heroes, all_heroes)] <- TRUE
+      }
+      team_df <- as.data.frame(team_matrix)
+      opp_df <- as.data.frame(opp_matrix)
+      
+      names(team_df) <- paste0("has_", names(team_df))
+      names(opp_df) <- paste0("has_", names(opp_df), "_opp")
+      
+      result <- bind_cols(compositions, team_df, opp_df)
+      
+      return(result)
     }
     
-    comps_with_indicators <- compositions_indicator |>
-      select(-dps_list, -sup_list, -dps_list_opp, -sup_list_opp) 
-    
-    
-    return(comps_with_indicators)
-  })
+    comp_with_indicators <- reactive({
+      result <- create_hero_matrix(comps_with_opponents(), hero_list)
+      return(result)
+    })
   
   popular_combinations <- reactive({
     
@@ -98,7 +105,7 @@ interaction_server <- function(id, all_data){
         values_to = "count"
       ) |> 
       mutate(
-        hero = gsub("has_", "", hero)
+        hero = str_remove(hero, "has_")
       ) |> 
       filter(hero != selected_hero) |> 
       arrange(desc(count))
@@ -166,21 +173,6 @@ interaction_server <- function(id, all_data){
     return(synergy)
     })
   
-  observeEvent(input$roleFilterSel, {
-    # Get filtered teams
-    filtered_hero_list <- heroes |> 
-      filter(role == input$roleFilterSel) |> 
-      pull(hero_name)
-    
-    # Update the select input
-    updateSelectInput(
-      session,  # Pass session as first argument
-      inputId = "heroFilterSel",  # Use just the input ID without session$ns()
-      choices = filtered_hero_list,
-      # Try to maintain current selection if it's still valid
-      selected = if(input$heroFilterSel %in% filtered_hero_list) input$heroFilterSel else filtered_hero_list[1]
-    )
-  })
   
   popular_enemies <- reactive({
     selected_hero <- input$heroFilterSel
@@ -318,6 +310,22 @@ interaction_server <- function(id, all_data){
       ) +
       coord_flip() +
       labs(title = "Counters", subtitle = "Winrate when playing against x", x = "Hero", y = "Change in Winrate")
+  })
+  
+  observeEvent(input$roleFilterSel, {
+    # Get filtered teams
+    filtered_hero_list <- heroes |> 
+      filter(role == input$roleFilterSel) |> 
+      pull(hero_name)
+    
+    # Update the select input
+    updateSelectInput(
+      session,  # Pass session as first argument
+      inputId = "heroFilterSel",  # Use just the input ID without session$ns()
+      choices = filtered_hero_list,
+      # Try to maintain current selection if it's still valid
+      selected = if(input$heroFilterSel %in% filtered_hero_list) input$heroFilterSel else filtered_hero_list[1]
+    )
   })
   })
 }

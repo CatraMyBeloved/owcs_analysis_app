@@ -104,23 +104,18 @@ map_server <- function(id, all_data) {
     })
 
     teams_in_region <- reactive({
-      # Get region filter from input
       selected_regions <- input$regionFilter
 
-      # Filter teams based on selected regions
       filtered_teams <- teams %>%
         filter(region %in% selected_regions) %>%
         pull(team_name)
 
-      # Return as a named list for selectInput
       setNames(as.list(filtered_teams), filtered_teams)
     })
 
     observeEvent(input$regionFilter, {
-      # Get filtered teams
       teams_list <- teams_in_region()
 
-      # Handle case when no teams match (provide a placeholder)
       if (length(teams_list) == 0) {
         teams_list <- list("No teams available" = "")
       }
@@ -197,9 +192,6 @@ map_server <- function(id, all_data) {
     output$PickratesVisAllMaps <- renderPlot({
       comparison_column <- "pickrate_diff_all_maps"
 
-
-      title <- "Pickrate Difference vs All Maps"
-
       pickrate_comparison() |>
         select(hero_name, selected_map_team_pickrate, all_of(comparison_column)) |>
         mutate(abs_diff = abs(.data[[comparison_column]])) |>
@@ -208,7 +200,7 @@ map_server <- function(id, all_data) {
         ggplot(aes(
           x = reorder(hero_name, abs_diff),
           y = .data[[comparison_column]],
-          fill = .data[[comparison_column]] < 0
+          fill = .data[[comparison_column]] > 0
         )) +
         geom_col() +
         scale_fill_manual(
@@ -217,41 +209,53 @@ map_server <- function(id, all_data) {
         ) +
         coord_flip() +
         labs(
-          title = title,
+          title = "Map-Specific Hero Usage",
+          subtitle = "Heroes that are picked more/less on this map than across all maps",
           x = "Hero",
           y = "Difference"
         ) +
         guides(fill = guide_legend(title = NULL))
     })
 
-    output$PickratesVisSelectedTeam <- renderPlot({
-      comparison_column <- "pickrate_diff_selected_map"
+    output$PickratesVisSelectedMaps <- renderPlot({
+      if (input$teamFilter == "All") {
+        ggplot() +
+          annotate("text",
+            x = 0.5, y = 0.5,
+            label = "Please select a specific team to see their signature picks",
+            size = 5, color = "#FFFFFF"
+          ) +
+          theme_void() +
+          theme(
+            plot.background = element_rect(fill = "#2D2D2D", color = NA)
+          )
+      } else {
+        comparison_column <- "pickrate_diff_selected_map"
 
-
-      title <- "Pickrate Difference vs all Teams on selected map"
-
-      pickrate_comparison() |>
-        select(hero_name, selected_map_team_pickrate, all_of(comparison_column)) |>
-        mutate(abs_diff = abs(.data[[comparison_column]])) |>
-        arrange(desc(abs_diff)) |>
-        head(input$topnPickrates) |>
-        ggplot(aes(
-          x = reorder(hero_name, abs_diff),
-          y = .data[[comparison_column]],
-          fill = .data[[comparison_column]] < 0
-        )) +
-        geom_col() +
-        scale_fill_manual(
-          values = c("FALSE" = "#ed946b", "TRUE" = "#6bebed"),
-          labels = c("TRUE" = "Below Average", "FALSE" = "Above Average")
-        ) +
-        coord_flip() +
-        labs(
-          title = title,
-          x = "Hero",
-          y = "Difference"
-        ) +
-        guides(fill = guide_legend(title = NULL))
+        pickrate_comparison() |>
+          select(hero_name, selected_map_team_pickrate, all_of(comparison_column)) |>
+          mutate(abs_diff = abs(.data[[comparison_column]])) |>
+          arrange(desc(abs_diff)) |>
+          head(input$topnPickrates) |>
+          ggplot(aes(
+            x = reorder(hero_name, abs_diff),
+            y = .data[[comparison_column]],
+            fill = .data[[comparison_column]] > 0
+          )) +
+          geom_col() +
+          scale_fill_manual(
+            values = c("FALSE" = "#ed946b", "TRUE" = "#6bebed"),
+            labels = c("TRUE" = "Below Average", "FALSE" = "Above Average")
+          ) +
+          coord_flip() +
+          labs(
+            title = "Team's Signature Picks",
+            subtitle = "Heroes this team uses differently than other teams on this map",
+            x = "Hero",
+            y = "Difference"
+          ) +
+          guides(fill = guide_legend(title = NULL))
+      }
     })
 
     output$filteredMatches <- renderDT({

@@ -40,16 +40,18 @@ map_ui <- function(id) {
         )
       ),
       card(
-        card_header("Pickrate difference between selected map/team and general pickrate - Plot"),
-        sliderInput(ns("topnPickrates"), "Top N heroes to show",
-          min = 1, max = 20, value = 10
+        card_header(
+          HTML("<h4>Map-Specific Hero Usage</h4>
+          <p class='text-muted'>Heroes that are picked more/less on this map than across all maps</p>")
         ),
-        plotOutput(
-          ns("PickratesVisAllMaps")
+        card_body(
+          sliderInput(ns("topnPickrates"), "Number of heroes to display", min = 1, max = 20, value = 10),
+          plotOutput(ns("PickratesVisAllMaps"))
         )
       ),
       card(
-        card_header("Pickrate difference between selected team on map and all teams on selected map - Plot"),
+        card_header(HTML("<h4>Team's Signature Picks</h4>
+          <p class='text-muted'>Heroes this team uses differently than other teams on this map</p>")),
         plotOutput(
           ns("PickratesVisSelectedMaps")
         )

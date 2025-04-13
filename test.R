@@ -78,54 +78,54 @@ comps <- comps_with_opponents
 
 test <- create_hero_matrix(comps, hero_list)    
 
-selected_hero <- "Genji"
-column_name_selected <- paste0("has_", selected_hero)
+clustering_columns <- test |> 
+  select(starts_with("has_") & !contains("_opp"))
 
-popular_combinations <- test |> 
-  filter(.data[[column_name_selected]]) |> 
-  summarize(
-    across(starts_with("has_") & !contains("_opp"),
-           sum)
-  ) |> 
-  pivot_longer(
-    cols = everything(),
-    names_to = "hero",
-    values_to = "count") |> 
-    mutate(
-      hero = str_remove(hero, "has_")
-    ) |> 
-  filter(hero != selected_hero) |> 
-  arrange(desc(count))
+k <- 6
+cluster_result <- kmeans(clustering_columns, centers = k)
 
-heroes_of_interest <- popular_combinations |> 
-  head(15) |> 
-  pull(hero) 
+test$cluster <- cluster_result$cluster
 
-hero_columns <- paste0("has_", heroes_of_interest)
+centers <- as.data.frame(cluster_result$centers)
 
-base_winrate <- 
-  test |> 
-  filter(.data[[column_name_selected]]) |> 
-  summarize(
-    winrate = mean(iswin)
-  )
+centers_long <- centers |> 
+  mutate(cluster = row_number()) |> 
+  pivot_longer(cols = -cluster,
+               names_to = "hero",
+               values_to = "frequency")
+centers_long |> 
+  ggplot(aes(y = hero, x = factor(cluster), fill = frequency)) +
+  geom_tile() 
 
-rows_of_interest <- 
-  test |> 
-  filter(
-    .data[[column_name_selected]]
-  )
+dist_matrix <- dist(clustering_columns, method = "binary")
 
-for(hero in hero_columns){
-  rows_of_interest |> 
-    filter(
-      .data[[hero]]
-    ) |> 
-    summarize(
-      winrate = mean(iswin),
-      count = n()
-    )
-}
+# Step 4: Perform hierarchical clustering
+# Try different linkage methods
+hclust_complete <- hclust(dist_matrix, method = "complete")
+hclust_average <- hclust(dist_matrix, method = "average")
+hclust_ward <- hclust(dist_matrix, method = "ward.D2")
 
+# Step 5: Visualize dendrograms
+# Plot the dendrogram - we'll use ward's method which often gives nice clusters
+par(mar = c(3, 1, 1, 12))  # Adjust margins
+plot(hclust_ward, hang = -1, labels = FALSE, main = "Hierarchical Clustering of Team Compositions", cex = 0.6)
 
+k <- 5
+clusters <- cutree(hclust_ward, k = k)
 
+test$hclust <- clusters
+
+# Step 7: Compare cluster sizes
+hclust_sizes <- table(test$hclust)
+kmeans_sizes <- table(test$cluster)
+print("Hierarchical Clustering Sizes:")
+print(hclust_sizes)
+print("Kmeans clustering sizes:")
+print(kmeans_sizes)
+
+dend <- as.dendrogram(hclust_ward)
+colors_to_use <- rainbow(k)
+
+# Plot the colored dendrogram
+par(mar = c(3, 1, 1, 12))
+plot(dend, main = "Hierarchical Clustering with Colored Clusters")

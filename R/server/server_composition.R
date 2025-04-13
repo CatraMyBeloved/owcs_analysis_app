@@ -105,6 +105,7 @@ composition_server <- function(id, all_data){
       return(result)
     })
     
+    comp_with_indicators 
 #---------- Outputs -----------
     
     output$filteredMatches <- renderDT({

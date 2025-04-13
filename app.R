@@ -87,10 +87,10 @@ ui <- page_fluid(
   navset_card_tab(
     # Call each UI module
     overview_ui("overview"),
+    team_ui("team"),
     map_ui("map"),
     interaction_ui("interaction"),
     ban_ui("ban"),
-    team_ui("team"),
     nav_item(
       input_dark_mode(id = "dark_mode", mode = "dark")
     )

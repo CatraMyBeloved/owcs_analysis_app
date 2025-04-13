@@ -19,9 +19,6 @@ team_ui <- function(id) {
           choices = list("NA" = "north_america", "EMEA" = "emea", "Korea" = "korea"),
           selected = list("north_america", "emea", "korea")
         ),
-        selectInput(ns("teamFilter"), "Team",
-          choices = team_list
-        ),
         checkboxGroupInput(ns("weekFilter"), "Week",
           choices = list(
             "Week 1" = 1, "Week 2" = 2,
@@ -29,41 +26,20 @@ team_ui <- function(id) {
             "Playoffs"
           ),
           selected = list(1, 2, 3, 4, "Playoffs")
+        )
+      ),
+      titlePanel("Team Dashboard"),
+      div(
+        selectInput(ns("teamSelection"),
+          label = "Select Team",
+          choices = team_list, selected = NULL
         ),
-        checkboxGroupInput(ns("modeFilter"), "Modes",
-          choices = list(
-            "Control", "Flashpoint", "Push",
-            "Escort", "Hybrid"
-          ),
-          selected = list(
-            "Control", "Flashpoint", "Push",
-            "Escort", "Hybrid"
+        card(
+          card_header("Favorite Heroes"),
+          card_body(
+            sliderInput(ns("nHeroes"), label = "N heroes to show", 0, 10, 5),
+            dataTableOutput(ns("favHeroes"))
           )
-        ),
-        checkboxGroupInput(ns("roleFilter"), "Roles",
-          choices = list("Tank" = "tank", "Support" = "sup", "DPS" = "dps"),
-          selected = list("tank", "sup", "dps")
-        )
-      ),
-      card(
-        card_header("Team pickrates - Plot"),
-        card_body(
-          sliderInput(ns("topnPickrates"), "Top N heroes to show",
-            min = 1, max = 20, value = 10
-          ),
-          plotOutput(ns("PickratesVis"))
-        )
-      ),
-      card(
-        card_header("Team pickrates"),
-        card_body(
-          dataTableOutput(ns("Pickrates"))
-        )
-      ),
-      card(
-        card_header("Filtered Matches"),
-        card_body(
-          dataTableOutput(ns("filteredMatches"))
         )
       )
     )

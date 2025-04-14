@@ -37,8 +37,13 @@ team_ui <- function(id) {
         card(
           card_header("Favorite Heroes"),
           card_body(
-            sliderInput(ns("nHeroes"), label = "N heroes to show", 0, 10, 5),
             dataTableOutput(ns("favHeroes"))
+          )
+        ),
+        card(
+          card_header("Favorite Maps"),
+          card_body(
+            dataTableOutput(ns("favMaps"))
           )
         )
       )

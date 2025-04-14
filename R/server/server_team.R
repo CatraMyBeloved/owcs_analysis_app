@@ -30,7 +30,8 @@ team_server <- function(id, all_data) {
       all_data |>
         filter(
           week %in% input$weekFilter,
-          region %in% input$regionFilter
+          region %in% input$regionFilter,
+          team_name == input$teamSelection
         )
     })
 
@@ -54,23 +55,58 @@ team_server <- function(id, all_data) {
         )
     })
 
+
+
     favorite_heroes <- reactive({
+      total_maps_val <- n_distinct(filtered_data()$match_map_id)
+
       filtered_data() |>
-        filter(team_name == input$teamSelection) |>
-        distinct(hero_name, role, match_map_id) |>
-        count(hero_name, role) |>
-        group_by(role) |>
-        slice_max(order_by = n, n = input$nHeroes, with_ties = FALSE) |>
-        mutate(rank = row_number()) |>
-        pivot_wider(
-          id_cols = rank,
-          names_from = role,
-          values_from = hero_name
-        )
+        distinct(hero_name, match_map_id, role, .keep_all = TRUE) |>
+        group_by(hero_name, role) |>
+        summarise(
+          appearances = n(),
+          pickrate = appearances / max(1, total_maps_val), # Using max(1, val) prevents division by zero
+          winrate = mean(iswin)
+        ) |>
+        filter(appearances > 0) |>
+        arrange(desc(pickrate))
     })
 
+    favorite_maps <-
+      reactive({
+        filtered_data() |>
+          filter(team_name == input$teamSelection) |>
+          distinct(match_map_id, .keep_all = TRUE) |>
+          group_by(map_name) |>
+          summarise(
+            times_played = n(),
+            winrate = mean(iswin)
+          ) |>
+          arrange(desc(times_played))
+      })
+
+    output$favMaps <- renderDT(
+      favorite_maps() |>
+        datatable(
+          options = list(
+            searching = TRUE,
+            pageLength = 5,
+            autoWidth = TRUE
+          )
+        ) |>
+        formatPercentage(c("winrate"), digits = 1)
+    )
+
     output$favHeroes <- renderDT(
-      favorite_heroes()
+      favorite_heroes() |>
+        datatable(
+          options = list(
+            searching = TRUE,
+            pageLength = 5,
+            autoWidth = TRUE
+          )
+        ) |>
+        formatPercentage(c("pickrate", "winrate"), digits = 1)
     )
   })
 }

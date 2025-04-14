@@ -26,87 +26,51 @@
 
 team_server <- function(id, all_data) {
   moduleServer(id, function(input, output, session) {
-    filtered_data <- reactive({
+    filtered_data_all <- reactive({
       all_data |>
-        filter(
-          week %in% input$weekFilter,
-          region %in% input$regionFilter,
-          team_name == input$teamSelection
-        )
-    })
-
-    filtered_matches_all_teams <- reactive({
-      matches |>
-        left_join(teams, by = c("team1_id" = "team_id")) |>
-        rename(team_1 = team_name) |>
-        left_join(teams, by = c("team2_id" = "team_id")) |>
-        rename(team_2 = team_name) |>
-        rename(region = region.x) |>
         filter(
           week %in% input$weekFilter,
           region %in% input$regionFilter
         )
     })
 
-    filtered_matches <- reactive({
-      filtered_matches_all_teams() |>
-        filter(
-          ((team_1 == input$teamFilter) | (team_2 == input$teamFilter))
-        )
+    filtered_data <- reactive({
+      filtered_data_all() |>
+        filter(team_name == input$teamSelection)
     })
 
+    output$overallWinrate <- renderText({
+      win_rate <- filtered_data() %>%
+        summarize(wr = mean(iswin, na.rm = TRUE)) %>%
+        pull(wr)
 
+      percent(win_rate, accuracy = 0.1)
+    })
 
-    favorite_heroes <- reactive({
-      total_maps_val <- n_distinct(filtered_data()$match_map_id)
+    output$mapsPlayed <- renderText({
+      n_maps <- filtered_data() |>
+        summarize(maps_played = n_distinct(match_map_id)) |>
+        pull(maps_played)
+    })
+
+    bestMap <- reactive({
+      min_games <- 3
 
       filtered_data() |>
-        distinct(hero_name, match_map_id, role, .keep_all = TRUE) |>
-        group_by(hero_name, role) |>
-        summarise(
-          appearances = n(),
-          pickrate = appearances / max(1, total_maps_val), # Using max(1, val) prevents division by zero
-          winrate = mean(iswin)
+        distinct(match_map_id, .keep_all = TRUE) |>
+        group_by(map_name) |>
+        summarize(
+          times_played = n(),
+          winrate = mean(iswin),
+          .groups = "drop"
         ) |>
-        filter(appearances > 0) |>
-        arrange(desc(pickrate))
+        filter(times_played >= min_games) |>
+        arrange(desc(winrate)) |>
+        slice_head(n = 1)
     })
 
-    favorite_maps <-
-      reactive({
-        filtered_data() |>
-          filter(team_name == input$teamSelection) |>
-          distinct(match_map_id, .keep_all = TRUE) |>
-          group_by(map_name) |>
-          summarise(
-            times_played = n(),
-            winrate = mean(iswin)
-          ) |>
-          arrange(desc(times_played))
-      })
-
-    output$favMaps <- renderDT(
-      favorite_maps() |>
-        datatable(
-          options = list(
-            searching = TRUE,
-            pageLength = 5,
-            autoWidth = TRUE
-          )
-        ) |>
-        formatPercentage(c("winrate"), digits = 1)
-    )
-
-    output$favHeroes <- renderDT(
-      favorite_heroes() |>
-        datatable(
-          options = list(
-            searching = TRUE,
-            pageLength = 5,
-            autoWidth = TRUE
-          )
-        ) |>
-        formatPercentage(c("pickrate", "winrate"), digits = 1)
-    )
+    output$bestMap <- renderText({
+      paste(bestMap()$map_name, " ", percent(bestMap()$winrate, 0.1))
+    })
   })
 }

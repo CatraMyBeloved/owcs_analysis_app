@@ -11,9 +11,11 @@
 # Load required libraries
 library(shiny)
 library(bslib)
+library(scales)
+library(bsicons)
 library(tidyverse)
 library(DT)
-library(rdrop2)
+library(aws.s3)
 library(RColorBrewer)
 
 source("R/server/server_shared.R")

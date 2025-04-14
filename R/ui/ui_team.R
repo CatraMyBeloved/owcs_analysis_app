@@ -28,22 +28,41 @@ team_ui <- function(id) {
           selected = list(1, 2, 3, 4, "Playoffs")
         )
       ),
-      titlePanel("Team Dashboard"),
       div(
         selectInput(ns("teamSelection"),
           label = "Select Team",
           choices = team_list, selected = NULL
         ),
         card(
-          card_header("Favorite Heroes"),
-          card_body(
-            dataTableOutput(ns("favHeroes"))
+          card_header(
+            div(
+              class = "d-flex justify-content-between align-items-center",
+              h4(textOutput(ns("teamName"))),
+              span(textOutput(ns("regionName")))
+            )
           )
         ),
-        card(
-          card_header("Favorite Maps"),
-          card_body(
-            dataTableOutput(ns("favMaps"))
+        layout_column_wrap(
+          width = 1 / 4,
+          value_box(
+            title = "Map Win Rate",
+            value = textOutput(ns("overallWinrate")),
+            showcase = bs_icon("award")
+          ),
+          value_box(
+            title = "Maps played",
+            value = textOutput(ns("mapsPlayed")),
+            showcase = bs_icon("map")
+          ),
+          value_box(
+            title = "Best Map",
+            value = textOutput(ns("bestMap")),
+            showcase = bs_icon("geo-fill")
+          ),
+          value_box(
+            title = "Signature Hero",
+            value = textOutput(ns("signatureHero")),
+            showcase = bs_icon("person-circle")
           )
         )
       )

@@ -39,6 +39,28 @@ team_server <- function(id, all_data) {
         filter(team_name == input$teamSelection)
     })
 
+    output$teamName <- renderText({
+      input$teamSelection
+    })
+
+    region_name <- reactive({
+      region <- teams |>
+        filter(team_name == input$teamSelection) |>
+        pull(region)
+
+      region_name <- case_when(
+        region == "north_america" ~ "North America",
+        region == "emea" ~ "EMEA",
+        region == "korea" ~ "Asia/Korea"
+      )
+
+      return(region_name)
+    })
+
+    output$regionName <- renderText({
+      region_name()
+    })
+
     output$overallWinrate <- renderText({
       win_rate <- filtered_data() %>%
         summarize(wr = mean(iswin, na.rm = TRUE)) %>%
@@ -72,5 +94,24 @@ team_server <- function(id, all_data) {
     output$bestMap <- renderText({
       paste(bestMap()$map_name, " ", percent(bestMap()$winrate, 0.1))
     })
+
+    signature_hero <- reactive({
+      general_pickrates <- calculate_pickrates(filtered_data_all())
+
+      team_pickrates <- calculate_pickrates(filtered_data())
+
+      signature_hero <- general_pickrates |>
+        inner_join(team_pickrates, by = "hero_name", suffix = c("", "_team")) |>
+        mutate(pickrate_diff = pickrate_team - pickrate) |>
+        filter(pickrate_team >= 0.3) |>
+        arrange(desc(pickrate_diff)) |>
+        pull(hero_name)
+
+      return(signature_hero)
+    })
+
+    output$signatureHero <- renderText(
+      signature_hero()[1]
+    )
   })
 }

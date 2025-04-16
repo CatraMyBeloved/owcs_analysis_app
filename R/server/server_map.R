@@ -122,7 +122,7 @@ map_server <- function(id, all_data) {
 
       # Update the select input
       updateSelectInput(
-        inputId = session$ns("teamFilter"),
+        inputId = "teamFilter",
         choices = c("All" = "All", teams_list),
         # Try to maintain current selection if it's still valid
         selected = if (input$teamFilter %in% names(teams_list)) input$teamFilter else NULL

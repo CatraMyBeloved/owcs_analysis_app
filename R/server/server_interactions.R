@@ -264,5 +264,31 @@ interaction_server <- function(id, all_data) {
         selected = if (input$heroFilterSel %in% filtered_hero_list) input$heroFilterSel else filtered_hero_list[1]
       )
     })
+
+    teams_in_region <- reactive({
+      selected_regions <- input$regionFilter
+
+      filtered_teams <- teams %>%
+        filter(region %in% selected_regions) %>%
+        pull(team_name)
+
+      setNames(as.list(filtered_teams), filtered_teams)
+    })
+
+    observeEvent(input$regionFilter, {
+      teams_list <- teams_in_region()
+
+      if (length(teams_list) == 0) {
+        teams_list <- list("No teams available" = "")
+      }
+
+      # Update the select input
+      updateSelectInput(
+        inputId = "teamFilter",
+        choices = c("All" = "All", teams_list),
+        # Try to maintain current selection if it's still valid
+        selected = if (input$teamFilter %in% names(teams_list)) input$teamFilter else NULL
+      )
+    })
   })
 }

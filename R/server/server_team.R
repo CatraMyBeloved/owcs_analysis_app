@@ -16,11 +16,7 @@
 #' @param id The module ID used for namespacing
 #' @param all_data Reactive data frame containing match and hero usage data
 #'
-#' @details This module focuses on team-specific hero usage patterns, calculating
-#'   how a team's hero picks differ from league averages. It processes data filtered
-#'   by week, mode, role, and region to identify a team's signature heroes and
-#'   heroes they avoid. Compares team-specific pickrates and winrates against the
-#'   weighted league average and visualizes the differences.
+#' @details
 #'
 #' @return A Shiny module server function that handles team-specific analysis
 
@@ -37,6 +33,14 @@ team_server <- function(id, all_data) {
     filtered_data <- reactive({
       filtered_data_all() |>
         filter(team_name == input$teamSelection)
+    })
+
+    general_pickrates <- reactive({
+      calculate_pickrates(filtered_data_all())
+    })
+
+    team_pickrates <- reactive({
+      calculate_pickrates(filtered_data())
     })
 
     output$teamName <- renderText({
@@ -96,9 +100,9 @@ team_server <- function(id, all_data) {
     })
 
     signature_hero <- reactive({
-      general_pickrates <- calculate_pickrates(filtered_data_all())
+      general_pickrates <- general_pickrates()
 
-      team_pickrates <- calculate_pickrates(filtered_data())
+      team_pickrates <- team_pickrates()
 
       signature_hero <- general_pickrates |>
         inner_join(team_pickrates, by = "hero_name", suffix = c("", "_team")) |>
@@ -110,8 +114,116 @@ team_server <- function(id, all_data) {
       return(signature_hero)
     })
 
-    output$signatureHero <- renderText(
+    output$signatureHero <- renderText({
       signature_hero()[1]
-    )
+    })
+
+    map_performance <- reactive({
+      map_performance <- filtered_data() |>
+        group_by(map_name) |>
+        distinct(match_map_id, .keep_all = TRUE) |>
+        summarise(
+          times_played = n(),
+          times_won = sum(iswin),
+          winrate = mean(iswin)
+        )
+
+      return(map_performance)
+    })
+
+    output$mapPerformance <- renderDataTable({
+      datatable(
+        map_performance() |> select(map_name, winrate, times_played) |>
+          arrange(desc(times_played)),
+        options = list(
+          searching = FALSE,
+          pageLength = 10,
+          autoWidth = TRUE
+        ),
+        colnames = c("Map Name", "Winrate", "Times Played"),
+        rownames = FALSE
+      ) |>
+        formatPercentage(c("winrate"), digits = 1)
+    })
+
+    output$mapPerformanceVis <- renderPlot({
+      map_data <- map_performance() |>
+        mutate(deviation = winrate * 100 - 50)
+
+      map_data$color <- ifelse(map_data$deviation >= 0, "positive", "negative")
+
+      map_data |>
+        filter(times_played >= 2) |>
+        ggplot(aes(
+          x = reorder(map_name, times_played),
+          y = deviation,
+          color = color
+        )) +
+        geom_segment(
+          aes(
+            xend = map_name,
+            y = 0,
+            yend = deviation,
+          ),
+          linewidth = 1.3
+        ) +
+        scale_color_manual(values = c(
+          "positive" = "#6bebed",
+          "negative" = "#ed946b"
+        )) +
+        geom_point(size = 5) +
+        labs(
+          title = "Map Winrate deviation",
+          subtitle = "Deviation from 50%",
+          x = "Map Name",
+          y = "Winrate deviation"
+        ) +
+        coord_flip() +
+        guides(color = "none")
+    })
+
+    # TODO: gotta work on this stuff to account for pickrate per team
+
+    hero_preferences <- reactive({
+      all_maps <- filtered_data() |>
+        summarise(
+          total_maps_played = n_distinct(match_map_id)
+        ) |>
+        pull(total_maps_played)
+
+      hero_preferences <- filtered_data() |>
+        group_by(hero_name, role) |>
+        distinct(match_map_id, .keep_all = TRUE) |>
+        summarise(
+          times_played = n(),
+          winrate = mean(iswin)
+        ) |>
+        mutate(pickrate = times_played / all_maps) |>
+        left_join(general_pickrates(),
+          by = "hero_name",
+          suffix = c("", "_general")
+        ) |>
+        mutate(pickrate_deviation = pickrate - pickrate_general)
+
+      return(hero_preferences)
+    })
+
+
+
+
+    output$heroPreferences <- renderDataTable({
+      datatable(
+        hero_preferences() |>
+          select(hero_name, winrate, pickrate_deviation),
+        colnames = c("Hero", "Winrate", "Pickrate Deviation"),
+        rownames = FALSE,
+        options = list(
+          searching = FALSE,
+          pageLength = 10,
+          autoWidth = TRUE
+        )
+      ) |>
+        formatPercentage(c("winrate", "pickrate_deviation"))
+    })
   })
 }

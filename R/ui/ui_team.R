@@ -82,15 +82,27 @@ team_ui <- function(id) {
           card(
             card_header("Map Performance"),
             navset_card_pill(
-              nav_panel(title = "Visual", p("To be added")),
-              nav_panel(title = "Table View", p("To be added"))
+              nav_panel(
+                title = "Visual",
+                plotOutput(
+                  ns("mapPerformanceVis")
+                )
+              ),
+              nav_panel(
+                title = "Table View",
+                dataTableOutput(
+                  ns("mapPerformance")
+                )
+              )
             )
           ),
           card(
-            card_header("Composition Preference"),
+            card_header("Composition Performance"),
             navset_card_pill(
               nav_panel(title = "Visual", p("To be added")),
-              nav_panel(title = "Table View", p("To be added"))
+              nav_panel(title = "Table View", dataTableOutput(
+                ns("heroPreferences")
+              ))
             )
           )
         )

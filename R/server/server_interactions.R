@@ -9,10 +9,21 @@ interaction_server <- function(id, all_data) {
 
 
       if (input$teamFilter != "All") {
-        filtered_data <- filtered_data |> filter(team_name == input$teamFilter)
+        filtered_rounds <- filtered_data |>
+          filter(team_name == input$teamFilter) |>
+          distinct(round_id) |>
+          pull(round_id)
+
+        filtered_data <- filtered_data |> filter(round_id %in% filtered_rounds)
       }
 
       return(filtered_data)
+    })
+
+    all_heroes_played <- reactive({
+      filtered_data() |>
+        select(hero_name) |>
+        distinct()
     })
 
     comps <- reactive({

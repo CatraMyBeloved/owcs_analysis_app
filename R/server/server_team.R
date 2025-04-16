@@ -155,7 +155,7 @@ team_server <- function(id, all_data) {
       map_data |>
         filter(times_played >= 2) |>
         ggplot(aes(
-          x = reorder(map_name, times_played),
+          x = reorder(map_name, desc(deviation)),
           y = deviation,
           color = color
         )) +
@@ -185,25 +185,47 @@ team_server <- function(id, all_data) {
     # TODO: gotta work on this stuff to account for pickrate per team
 
     hero_preferences <- reactive({
-      all_maps <- filtered_data() |>
+      maps_played_per_team <- filtered_data_all() |>
+        group_by(team_name) |>
         summarise(
-          total_maps_played = n_distinct(match_map_id)
+          maps_played = n_distinct(match_map_id)
+        )
+
+      heroes_pickrate <- filtered_data_all() |>
+        group_by(team_name, hero_name, role) |>
+        distinct(match_map_id, .keep_all = TRUE) |>
+        summarise(
+          maps_played_with_hero = n(),
+          maps_won_with_hero = sum(iswin),
+          .groups = "drop"
         ) |>
-        pull(total_maps_played)
+        left_join(maps_played_per_team, by = "team_name") |>
+        mutate(pickrate_per_team = maps_played_with_hero / maps_played) |>
+        group_by(hero_name, role) |>
+        summarise(
+          pickrate = mean(pickrate_per_team)
+        )
+
+      maps_played_selected_team <- filtered_data() |>
+        group_by(team_name) |>
+        summarise(
+          maps_played = n_distinct(match_map_id)
+        ) |>
+        pull(maps_played)
 
       hero_preferences <- filtered_data() |>
         group_by(hero_name, role) |>
         distinct(match_map_id, .keep_all = TRUE) |>
         summarise(
           times_played = n(),
-          winrate = mean(iswin)
+          winrate = mean(iswin),
+          .groups = "drop"
         ) |>
-        mutate(pickrate = times_played / all_maps) |>
-        left_join(general_pickrates(),
-          by = "hero_name",
-          suffix = c("", "_general")
-        ) |>
-        mutate(pickrate_deviation = pickrate - pickrate_general)
+        left_join(heroes_pickrate, by = "hero_name", suffix = c("", "_general")) |>
+        mutate(
+          pickrate_team = times_played / maps_played_selected_team,
+          pickrate_deviation = pickrate_team - pickrate
+        )
 
       return(hero_preferences)
     })
@@ -224,6 +246,35 @@ team_server <- function(id, all_data) {
         )
       ) |>
         formatPercentage(c("winrate", "pickrate_deviation"))
+    })
+
+    output$heroPreferencesVis <- renderPlot({
+      hero_data <- hero_preferences()
+      hero_data$color <- if_else(hero_data$pickrate_deviation < 0, "negative", "positive")
+
+      hero_data |>
+        filter(times_played > 10) |>
+        ggplot(
+          aes(
+            x = reorder(hero_name, desc(pickrate_deviation)),
+            y = pickrate_deviation,
+            color = color
+          )
+        ) +
+        geom_segment(
+          aes(
+            xend = hero_name,
+            y = 0,
+            yend = pickrate_deviation,
+          ),
+          linewidth = 1.3
+        ) +
+        geom_point(size = 5) +
+        scale_color_manual(values = c(
+          "positive" = "#6bebed",
+          "negative" = "#ed946b"
+        )) +
+        coord_flip()
     })
   })
 }

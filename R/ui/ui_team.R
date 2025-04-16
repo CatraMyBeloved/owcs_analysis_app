@@ -99,7 +99,9 @@ team_ui <- function(id) {
           card(
             card_header("Composition Performance"),
             navset_card_pill(
-              nav_panel(title = "Visual", p("To be added")),
+              nav_panel(title = "Visual", plotOutput(
+                ns("heroPreferencesVis")
+              )),
               nav_panel(title = "Table View", dataTableOutput(
                 ns("heroPreferences")
               ))

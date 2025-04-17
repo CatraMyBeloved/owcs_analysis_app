@@ -206,6 +206,13 @@ team_server <- function(id, all_data) {
           pickrate = mean(pickrate_per_team)
         )
 
+      heroes_winrate <- filtered_data_all() |>
+        group_by(hero_name, role) |>
+        summarise(
+          league_winrate = mean(iswin),
+          .groups = "drop"
+        )
+
       maps_played_selected_team <- filtered_data() |>
         group_by(team_name) |>
         summarise(
@@ -225,6 +232,10 @@ team_server <- function(id, all_data) {
         mutate(
           pickrate_team = times_played / maps_played_selected_team,
           pickrate_deviation = pickrate_team - pickrate
+        ) |>
+        left_join(heroes_winrate, by = c("hero_name", "role")) |>
+        mutate(
+          winrate_differential = winrate - league_winrate
         )
 
       return(hero_preferences)
@@ -249,7 +260,53 @@ team_server <- function(id, all_data) {
     })
 
     output$heroPreferencesVis <- renderPlot({
+      team_winrate <- filtered_data() |>
+        distinct(match_map_id, .keep_all = TRUE) |>
+        summarise(
+          winrate = mean(iswin)
+        ) |>
+        pull(winrate)
+
       hero_data <- hero_preferences()
+
+      hero_data <- hero_data |>
+        mutate(
+          winrate_deviation = winrate * 100 - 50,
+          pickrate_deviation = pickrate_deviation * 100,
+          color = case_when(
+            (winrate_deviation < 0) & (pickrate_deviation < 0) ~ "wisely avoided",
+            (winrate_deviation > 0) & (pickrate_deviation < 0) ~ "underutilized strength",
+            (winrate_deviation < 0) & (pickrate_deviation > 0) ~ "overutilized weakness",
+            (winrate_deviation > 0) & (pickrate_deviation > 0) ~ "wisely used"
+          )
+        )
+
+      x_limit <- max(abs(hero_data$winrate_deviation)) * 1.05
+      y_limit <- max(abs(hero_data$pickrate_deviation)) * 1.05
+
+      hero_data |>
+        filter(times_played > 3) |>
+        ggplot(aes(
+          x = winrate_deviation,
+          y = pickrate_deviation,
+          color = color
+        )) +
+        geom_point(size = 3) +
+        geom_hline(yintercept = 0, linewidth = 1.5, color = "#D6D6D6") +
+        geom_vline(xintercept = 0, linewidth = 1.5, color = "#D6D6D6") +
+        coord_cartesian(xlim = c(-x_limit, x_limit), ylim = c(-y_limit, y_limit)) +
+        scale_color_manual(values = c(
+          "wisely avoided" = "#CD7F50",
+          "underutilized strength" = "#386584",
+          "overutilized weakness" = "#CD9750",
+          "wisely used" = "#348571"
+        ))
+    })
+
+
+    output$heroPreferencesVistest <- renderPlot({
+      hero_data <- hero_preferences()
+
       hero_data$color <- if_else(hero_data$pickrate_deviation < 0, "negative", "positive")
 
       hero_data |>
@@ -274,7 +331,10 @@ team_server <- function(id, all_data) {
           "positive" = "#6bebed",
           "negative" = "#ed946b"
         )) +
-        coord_flip()
+        coord_flip() +
+        guides(
+          color = "none"
+        )
     })
   })
 }

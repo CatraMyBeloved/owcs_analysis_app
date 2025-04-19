@@ -66,8 +66,8 @@ team_server <- function(id, all_data) {
     })
 
     output$overallWinrate <- renderText({
-      win_rate <- filtered_data() %>%
-        summarize(wr = mean(iswin, na.rm = TRUE)) %>%
+      win_rate <- filtered_data() |>
+        summarize(wr = mean(iswin, na.rm = TRUE)) |>
         pull(wr)
 
       percent(win_rate, accuracy = 0.1)
@@ -260,47 +260,99 @@ team_server <- function(id, all_data) {
     })
 
     output$heroPreferencesVis <- renderPlot({
-      team_winrate <- filtered_data() |>
-        distinct(match_map_id, .keep_all = TRUE) |>
-        summarise(
-          winrate = mean(iswin)
-        ) |>
-        pull(winrate)
+      team_win_rate <- filtered_data() |>
+        summarize(wr = mean(iswin, na.rm = TRUE)) |>
+        pull(wr)
+
 
       hero_data <- hero_preferences()
 
       hero_data <- hero_data |>
         mutate(
-          winrate_deviation = winrate * 100 - 50,
+          winrate_deviation = winrate * 100 - team_win_rate * 100,
           pickrate_deviation = pickrate_deviation * 100,
-          color = case_when(
-            (winrate_deviation < 0) & (pickrate_deviation < 0) ~ "wisely avoided",
-            (winrate_deviation > 0) & (pickrate_deviation < 0) ~ "underutilized strength",
-            (winrate_deviation < 0) & (pickrate_deviation > 0) ~ "overutilized weakness",
-            (winrate_deviation > 0) & (pickrate_deviation > 0) ~ "wisely used"
+          category = case_when(
+            (winrate_deviation < 0) & (pickrate_deviation < 0) ~ "Wisely Avoided",
+            (winrate_deviation > 0) & (pickrate_deviation < 0) ~ "Underused Strength",
+            (winrate_deviation < 0) & (pickrate_deviation > 0) ~ "Overused Weakness",
+            (winrate_deviation > 0) & (pickrate_deviation > 0) ~ "Core Strength"
           )
         )
 
+
+
       x_limit <- max(abs(hero_data$winrate_deviation)) * 1.05
       y_limit <- max(abs(hero_data$pickrate_deviation)) * 1.05
+
+
+      quadrant_colors <- c(
+        "Wisely Avoided" = "#8491B4", # Muted blue-gray
+        "Underused Strength" = "#41B6E6", # Bright blue
+        "Overused Weakness" = "#E6A243", # Orange
+        "Core Strength" = "#579920" # Green
+      )
 
       hero_data |>
         filter(times_played > 3) |>
         ggplot(aes(
           x = winrate_deviation,
           y = pickrate_deviation,
-          color = color
+          color = category
         )) +
         geom_point(size = 3) +
         geom_hline(yintercept = 0, linewidth = 1.5, color = "#D6D6D6") +
         geom_vline(xintercept = 0, linewidth = 1.5, color = "#D6D6D6") +
         coord_cartesian(xlim = c(-x_limit, x_limit), ylim = c(-y_limit, y_limit)) +
-        scale_color_manual(values = c(
-          "wisely avoided" = "#CD7F50",
-          "underutilized strength" = "#386584",
-          "overutilized weakness" = "#CD9750",
-          "wisely used" = "#348571"
-        ))
+        annotate("rect",
+          xmin = 0, xmax = x_limit, ymin = 0, ymax = y_limit,
+          fill = "#7AC14233", alpha = 0.15
+        ) +
+        annotate("rect",
+          xmin = -x_limit, xmax = 0, ymin = 0, ymax = y_limit,
+          fill = "#E6A24333", alpha = 0.15
+        ) +
+        annotate("rect",
+          xmin = 0, xmax = x_limit, ymin = -y_limit, ymax = 0,
+          fill = "#41B6E633", alpha = 0.15
+        ) +
+        annotate("rect",
+          xmin = -x_limit, xmax = 0, ymin = -y_limit, ymax = 0,
+          fill = "#8491B433", alpha = 0.15
+        ) +
+        # Quadrant labels
+        annotate("text",
+          x = x_limit * 0.7, y = y_limit * 0.9, label = "CORE STRENGTHS",
+          size = 3.5, color = "#FFFFFF"
+        ) +
+        annotate("text",
+          x = -x_limit * 0.7, y = y_limit * 0.9, label = "OVERUSED WEAKNESSES",
+          size = 3.5, color = "#FFFFFF"
+        ) +
+        annotate("text",
+          x = x_limit * 0.7, y = -y_limit * 0.9, label = "UNDERUSED STRENGTHS",
+          size = 3.5, color = "#FFFFFF"
+        ) +
+        annotate("text",
+          x = -x_limit * 0.7, y = -y_limit * 0.9, label = "WISELY AVOIDED",
+          size = 3.5, color = "#FFFFFF"
+        ) +
+        geom_text_repel(
+          aes(label = hero_name),
+          size = 3,
+          color = "#FFFFFF",
+          bg.color = "#2D2D2D",
+          bg.r = 0.15,
+          max.overlaps = 15,
+          seed = 42
+        ) +
+        labs(
+          title = paste0(input$teamSelection, "'s Hero Performance"),
+          subtitle = "Comparing pick rate and win rate relative to league averages",
+          x = "Win Rate Deviation from average team winrate",
+          y = "Pick Rate Deviation from League Average"
+        ) +
+        guides(color = "none") +
+        scale_color_manual(values = quadrant_colors)
     })
 
 

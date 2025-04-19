@@ -1,11 +1,11 @@
 #' -----------------------------------------------------------------------------
-#' up_overview.R
+#' ui_overview.R
 #'
 #' Description: Contains UI elements and layout for overview analysis page
 #'
 #' Author: CatraMyBeloved
 #' Date Created: 03-04-2025
-#' Last Modified: 02-04-2025
+#' Last Modified: 04-18-2025
 #' -----------------------------------------------------------------------------
 
 overview_ui <- function(id) {
@@ -16,32 +16,11 @@ overview_ui <- function(id) {
     layout_sidebar(
       sidebar = sidebar(
         helpText("Select criteria to filter composition data."),
-        checkboxGroupInput(ns("weekFilter"), "Week",
-          choices = list(
-            "Week 1" = 1, "Week 2" = 2,
-            "Week 3" = 3, "Week 4" = 4,
-            "Playoffs"
-          ),
-          selected = list(1, 2, 3, 4, "Playoffs")
-        ),
-        checkboxGroupInput(ns("regionFilter"), "Region",
-          choices = list("NA" = "north_america", "EMEA" = "emea", "Korea" = "korea"),
-          selected = list("north_america", "emea", "korea")
-        ),
-        checkboxGroupInput(ns("modeFilter"), "Modes",
-          choices = list(
-            "Control", "Flashpoint", "Push",
-            "Escort", "Hybrid"
-          ),
-          selected = list(
-            "Control", "Flashpoint", "Push",
-            "Escort", "Hybrid"
-          )
-        ),
-        checkboxGroupInput(ns("roleFilter"), "Roles",
-          choices = list("Tank" = "tank", "Support" = "sup", "DPS" = "dps"),
-          selected = list("tank", "sup", "dps")
-        )
+        # Using shared filter components
+        week_filter(ns("weekFilter")),
+        region_filter(ns("regionFilter")),
+        mode_filter(ns("modeFilter")),
+        role_filter(ns("roleFilter"))
       ),
       card(
         card_header("General Pickrates - Plot"),

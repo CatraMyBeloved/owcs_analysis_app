@@ -13,31 +13,14 @@ map_ui <- function(id) {
   ns <- NS(id)
 
   nav_panel(
-    "Map Analysis",
+    "Detailed Analysis",
     layout_sidebar(
       sidebar = sidebar(
-        checkboxGroupInput(ns("regionFilter"), "Region",
-          choices = list("NA" = "north_america", "EMEA" = "emea", "Korea" = "korea"),
-          selected = list("north_america", "emea", "korea")
-        ),
-        selectInput(ns("mapFilter"), "Maps",
-          choices = map_list
-        ),
-        selectInput(ns("teamFilter"), "Team",
-          choices = c("All" = "All", team_list)
-        ),
-        checkboxGroupInput(ns("weekFilter"), "Week",
-          choices = list(
-            "Week 1" = 1, "Week 2" = 2,
-            "Week 3" = 3, "Week 4" = 4,
-            "Playoffs"
-          ),
-          selected = list(1, 2, 3, 4, "Playoffs")
-        ),
-        checkboxGroupInput(ns("roleFilter"), "Roles",
-          choices = list("Tank" = "tank", "Support" = "sup", "DPS" = "dps"),
-          selected = list("tank", "sup", "dps")
-        )
+        region_filter(ns("regionFilter")),
+        map_filter(ns("mapFilter"), all_option = FALSE),
+        team_filter(ns("teamFilter")),
+        week_filter(ns("weekFilter")),
+        role_filter(ns("roleFilter"))
       ),
       card(
         card_header(

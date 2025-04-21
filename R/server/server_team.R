@@ -20,7 +20,7 @@
 #'
 #' @return A Shiny module server function that handles team-specific analysis
 
-team_server <- function(id, all_data) {
+team_server <- function(id, all_data, app_data) {
   moduleServer(id, function(input, output, session) {
     filtered_data_all <- reactive({
       all_data |>
@@ -387,6 +387,44 @@ team_server <- function(id, all_data) {
         guides(
           color = "none"
         )
+    })
+
+    recent_matches <- reactive({
+      team_id <- app_data$teams |>
+        filter(team_name == input$teamSelection) |>
+        pull(team_id)
+
+      match_ids <- app_data$matches |>
+        filter((team1_id == team_id) | (team2_id == team_id)) |>
+        arrange(desc(as.Date(date))) |>
+        distinct(match_id) |>
+        slice(1:5) |>
+        pull(match_id)
+
+      recent_matches <- app_data$matches |>
+        filter(match_id %in% match_ids) |>
+        left_join(app_data$teams, by = c("team1_id" = "team_id")) |>
+        rename(team1_name = team_name) |>
+        left_join(app_data$teams, by = c("team2_id" = "team_id")) |>
+        rename(team2_name = team_name) |>
+        mutate(date = as.Date(date, format = "%d/%m/%Y")) |>
+        select(match_id, team1_name, team2_name, date)
+
+      recent_match_details <- app_data$match_maps |>
+        filter(match_id %in% match_ids) |>
+        left_join(app_data$matches, by = "match_id") |>
+        left_join(app_data$teams, by = c("team1_id" = "team_id")) |>
+        rename(team1_name = team_name) |>
+        left_join(app_data$teams, by = c("team2_id" = "team_id")) |>
+        rename(team2_name = team_name) |>
+        left_join(app_data$maps, by = "map_id") |>
+        mutate(iswin = case_when(
+          team_id == map_win_team_id ~ 1,
+          .default = 0
+        )) |>
+        select(match_id, team1_name, team2_name, map_name, iswin)
+
+      return(recent_matches, recent_match_details)
     })
   })
 }

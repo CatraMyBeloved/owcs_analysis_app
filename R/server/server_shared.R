@@ -73,13 +73,19 @@ create_hero_matrix <- function(compositions, all_heroes) {
   n_rows <- nrow(compositions)
   n_columns <- length(all_heroes)
 
+  # Pre-allocate matrices
   team_matrix <- matrix(FALSE, nrow = n_rows, ncol = n_columns)
   opp_matrix <- matrix(FALSE, nrow = n_rows, ncol = n_columns)
 
   colnames(team_matrix) <- all_heroes
   colnames(opp_matrix) <- all_heroes
 
-  for (i in 1:n_rows) {
+  # Create hero index lookup once - this is much faster than repeated match() calls
+  hero_indices <- setNames(seq_along(all_heroes), all_heroes)
+
+  # Process each row with optimized lookup
+  for (i in seq_len(n_rows)) {
+    # Extract heroes for current composition
     team_heroes <- c(
       compositions$tank[i],
       unlist(compositions$dps[i]),
@@ -92,15 +98,28 @@ create_hero_matrix <- function(compositions, all_heroes) {
       unlist(compositions$sup_opp[i])
     )
 
-    team_matrix[i, match(team_heroes, all_heroes)] <- TRUE
-    opp_matrix[i, match(opp_heroes, all_heroes)] <- TRUE
+    # Direct lookup via named vector (much faster than match())
+    if (length(team_heroes) > 0) {
+      idx <- hero_indices[team_heroes]
+      idx <- idx[!is.na(idx)] # Handle any missing heroes gracefully
+      if (length(idx) > 0) team_matrix[i, idx] <- TRUE
+    }
+
+    if (length(opp_heroes) > 0) {
+      idx <- hero_indices[opp_heroes]
+      idx <- idx[!is.na(idx)]
+      if (length(idx) > 0) opp_matrix[i, idx] <- TRUE
+    }
   }
+
+  # Convert to data frames
   team_df <- as.data.frame(team_matrix)
   opp_df <- as.data.frame(opp_matrix)
 
   names(team_df) <- paste0("has_", names(team_df))
   names(opp_df) <- paste0("has_", names(opp_df), "_opp")
 
+  # Combine results
   result <- bind_cols(compositions, team_df, opp_df)
 
   return(result)

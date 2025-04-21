@@ -87,7 +87,7 @@ team_ui <- function(id) {
             )
           ),
           card(
-            card_header("Composition Performance"),
+            card_header("Hero Preferences"),
             navset_card_pill(
               nav_panel(title = "Visual", plotOutput(
                 ns("heroPreferencesVis")
@@ -96,6 +96,13 @@ team_ui <- function(id) {
                 ns("heroPreferences")
               ))
             )
+          )
+        ),
+        layout_column_wrap(
+          width = 1 / 2,
+          card(
+            card_header("Recent Matches"),
+            card_body()
           )
         )
       )

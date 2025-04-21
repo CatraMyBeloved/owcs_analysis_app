@@ -56,14 +56,12 @@ message("Processing into tables...")
 new_teams <- combined_data |>
   select(t1_team, t2_team, region, week) |>
   pivot_longer(cols = c(t1_team, t2_team), values_to = "team_name") |>
-  # Create a flag for teams in the LAN
   mutate(is_lan = (region == "china" & week == "hangzhou_lan")) |>
-  # For teams at the LAN, try to find their home region first
   group_by(team_name) |>
-  arrange(is_lan) |> # This puts non-LAN entries first
-  slice(1) |> # Take the first entry (home region if available)
+  arrange(is_lan) |>
+  slice(1) |>
   ungroup() |>
-  select(-is_lan, -week) |> # Remove the temporary flag
+  select(-is_lan, -week, -name) |>
   mutate(team_id = row_number())
 
 new_maps <- combined_data |>

@@ -72,9 +72,6 @@ map_server <- function(id, all_data) {
           )
       }
 
-
-
-
       filtered_match_ids <- filtered_matches |>
         right_join(match_maps, by = "match_id") |>
         filter(map_id == selected_map_id()) |>

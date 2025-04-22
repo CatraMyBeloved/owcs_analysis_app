@@ -422,5 +422,35 @@ team_server <- function(id, all_data, app_data) {
         details = recent_match_details
       )
     })
+
+    week_performance <- reactive({
+      map_winrate_per_week <- filtered_data() |>
+        group_by(week) |>
+        distinct(match_map_id, .keep_all = TRUE) |>
+        summarise(
+          maps_played = n(),
+          maps_won = sum(iswin),
+          winrate = maps_won / maps_played
+        ) |>
+        ungroup() |>
+        mutate(week_numeric = row_number())
+    })
+
+    output$winrateWeekVis <- renderPlot({
+      winrate <- week_performance()
+      labels <- winrate |> pull(week)
+
+      winrate |>
+        ggplot(aes(x = week_numeric, y = winrate, group = 1)) +
+        geom_area(fill = "#6bebed", alpha = 0.5) +
+        geom_point() +
+        geom_line(color = "#33827e", linewidth = 1) +
+        labs(
+          title = "Winrate per Week",
+          subtitle = "Map winrate on each week, including playoffs and LAN",
+          x = "Week",
+          y = "Map Winrate"
+        )
+    })
   })
 }

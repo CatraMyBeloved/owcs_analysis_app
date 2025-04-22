@@ -1,32 +1,31 @@
-hero_features_split <- initial_split(hero_features_labeled)
+hero_features_labeled <- hero_features_labeled |>
+  select(-heroes_played)
 
-training_set <- training(hero_features_split)
-test_set <- testing(hero_features_split)
+hero_features_split <- initial_split(hero_features_labeled)
 
 rand_forest_spec <- rand_forest() |>
   set_engine("ranger") |>
   set_mode("classification")
-
-rand_forest_fit <- rand_forest_spec |>
-  fit(composition ~ ., data = training_set)
-
-unlabeled_sample$prediction <- predict(rand_forest_fit, unlabeled_sample)
 
 boost_tree_spec <- boost_tree() |>
   set_mode("classification") |>
   set_engine("xgboost") |>
   set_args(trees = 20, learn_rate = 0.15, min_n = 4)
 
-boost_tree_spec
+rand_forest_wkflow <- workflow() |>
+  add_model(rand_forest_spec) |>
+  add_formula(composition ~ .)
 
-boost_tree_fit <- boost_tree_spec |>
-  fit(composition ~ ., data = training_set)
+boost_tree_wkflow <- workflow() |>
+  add_model(boost_tree_spec) |>
+  add_formula(composition ~ .)
 
-unlabeled_sample$boost_prediction <- predict(boost_tree_fit, unlabeled_sample |>
-  select(-prediction))
+final_boost_tree <- last_fit(boost_tree_wkflow, hero_features_split) |>
+  extract_workflow()
 
-test_set$prediction <- predict(rand_forest_fit, test_set)
-test_set$boost_prediction <- predict(boost_tree_fit, test_set |> select(-prediction))
+final_boost_tree
+collect_metrics(final_boost_tree)
 
-evaluation <- test_set |>
-  select(composition, prediction, boost_prediction)
+hero_features_unlabeled <- hero_features_unlabeled |> select(-heroes_played)
+
+prediction <- predict(final_boost_tree, new_data = hero_features_unlabeled)

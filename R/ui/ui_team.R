@@ -97,6 +97,17 @@ team_ui <- function(id) {
               ))
             )
           )
+        ),
+        layout_column_wrap(
+          width = 1,
+          card(
+            card_header("Winrate per week"),
+            navset_card_pill(
+              nav_panel(title = "Visual", plotOutput(
+                ns("winrateWeekVis")
+              ))
+            )
+          )
         )
       )
     )

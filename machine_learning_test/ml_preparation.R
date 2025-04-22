@@ -1,5 +1,6 @@
 library(tidyverse)
 library(tidymodels)
+library(tidyclust)
 
 #----- prepare data -------
 
@@ -92,7 +93,12 @@ comps <- comps_with_opponents
 
 comp_matrix <- create_hero_matrix(comps, hero_list)
 
+comp_matrix <- comp_matrix |>
+  rowwise() |>
+  mutate(heroes_played = list(c(tank, unlist(dps), unlist(sup)))) |>
+  mutate(heroes_played = paste(sort(heroes_played), collapse = ","))
+
 rm(list = setdiff(ls(), "comp_matrix"))
 
 hero_features <- comp_matrix %>%
-  select(starts_with("has_") & !contains("_opp"))
+  select(starts_with("has_") & !contains("_opp"), heroes_played)

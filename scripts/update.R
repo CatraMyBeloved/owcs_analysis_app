@@ -71,11 +71,11 @@ new_maps <- combined_data |>
   mutate(
     map_name = map, map = NULL,
     mode = case_when(
-      map_name %in% c("Lijiang Tower", "Antarctic Peninsula", "Oasis", "Nepal", "Samoa") ~ "Control",
+      map_name %in% c("Lijiang Tower", "Antarctic Peninsula", "Oasis", "Nepal", "Samoa", "Ilios") ~ "Control",
       map_name %in% c("New Junk City", "Suravasa") ~ "Flashpoint",
       map_name %in% c("King's Row", "Numbani", "Paraiso", "Eichenwalde", "Blizzard World", "Dorado") ~ "Hybrid",
-      map_name %in% c("Esperanca", "New Queen Street", "Colosseo") ~ "Push",
-      map_name %in% c("Gibraltar", "Havana", "Rialto", "Route 66") ~ "Escort"
+      map_name %in% c("Esperanca", "New Queen Street", "Colosseo", "Runasapi") ~ "Push",
+      map_name %in% c("Gibraltar", "Havana", "Rialto", "Route 66", "Circuit Royal") ~ "Escort"
     )
   )
 

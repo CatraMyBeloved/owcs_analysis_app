@@ -92,5 +92,7 @@ comps <- comps_with_opponents
 
 comp_matrix <- create_hero_matrix(comps, hero_list)
 
+rm(list = setdiff(ls(), "comp_matrix"))
+
 hero_features <- comp_matrix %>%
   select(starts_with("has_") & !contains("_opp"))

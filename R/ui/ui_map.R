@@ -17,7 +17,7 @@ map_ui <- function(id) {
     layout_sidebar(
       sidebar = sidebar(
         region_filter(ns("regionFilter")),
-        map_filter(ns("mapFilter")),
+        map_filter(ns("mapFilter"), all_option = FALSE),
         team_filter(ns("teamFilter")),
         week_filter(ns("weekFilter")),
         role_filter(ns("roleFilter"))

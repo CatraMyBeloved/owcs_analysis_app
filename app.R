@@ -10,6 +10,7 @@
 
 # Load required libraries
 library(shiny)
+library(shinydashboard)
 library(bslib)
 library(scales)
 library(bsicons)
@@ -172,7 +173,7 @@ server <- function(input, output, session) {
 
   # Call each server module, passing the data
   overview_server("overview", all_data_reactive())
-  team_server("team", all_data_reactive())
+  team_server("team", all_data_reactive(), app_data)
   map_server("map", all_data_reactive())
   ban_server("ban", all_bans_reactive())
   interaction_server("interaction", all_data_reactive())

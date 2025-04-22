@@ -389,42 +389,38 @@ team_server <- function(id, all_data, app_data) {
         )
     })
 
-    recent_matches <- reactive({
-      team_id <- app_data$teams |>
+    recent_matches_data <- reactive({
+      team_id <- teams |>
         filter(team_name == input$teamSelection) |>
         pull(team_id)
 
-      match_ids <- app_data$matches |>
+      match_ids <- matches |>
         filter((team1_id == team_id) | (team2_id == team_id)) |>
-        arrange(desc(as.Date(date))) |>
+        arrange(desc(as.Date(date, format = "%d/%m/%Y"))) |>
         distinct(match_id) |>
         slice(1:5) |>
         pull(match_id)
 
-      recent_matches <- app_data$matches |>
+      recent_matches <- matches |>
         filter(match_id %in% match_ids) |>
-        left_join(app_data$teams, by = c("team1_id" = "team_id")) |>
+        left_join(teams, by = c("team1_id" = "team_id")) |>
         rename(team1_name = team_name) |>
-        left_join(app_data$teams, by = c("team2_id" = "team_id")) |>
+        left_join(teams, by = c("team2_id" = "team_id")) |>
         rename(team2_name = team_name) |>
         mutate(date = as.Date(date, format = "%d/%m/%Y")) |>
-        select(match_id, team1_name, team2_name, date)
+        select(match_id, team1_name, team2_name, date, bracket)
 
-      recent_match_details <- app_data$match_maps |>
+      recent_match_details <- match_maps |>
         filter(match_id %in% match_ids) |>
-        left_join(app_data$matches, by = "match_id") |>
-        left_join(app_data$teams, by = c("team1_id" = "team_id")) |>
-        rename(team1_name = team_name) |>
-        left_join(app_data$teams, by = c("team2_id" = "team_id")) |>
-        rename(team2_name = team_name) |>
-        left_join(app_data$maps, by = "map_id") |>
-        mutate(iswin = case_when(
-          team_id == map_win_team_id ~ 1,
-          .default = 0
-        )) |>
-        select(match_id, team1_name, team2_name, map_name, iswin)
+        left_join(maps, by = "map_id") |>
+        mutate(winner = ifelse(map_win_team_id == team_id, TRUE, FALSE)) |>
+        select(match_id, map_name, winner)
 
-      return(recent_matches, recent_match_details)
+      # Return both datasets in a list
+      list(
+        matches = recent_matches,
+        details = recent_match_details
+      )
     })
   })
 }

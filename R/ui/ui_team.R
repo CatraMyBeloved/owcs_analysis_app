@@ -97,13 +97,6 @@ team_ui <- function(id) {
               ))
             )
           )
-        ),
-        layout_column_wrap(
-          width = 1 / 2,
-          card(
-            card_header("Recent Matches"),
-            card_body()
-          )
         )
       )
     )

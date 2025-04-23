@@ -1,63 +1,91 @@
 detail_server <- function(id, all_data) {
   moduleServer(id, function(input, output, session) {
-    filtered_data_all_teams <- reactive({
+    filtered_data_weeks <- reactive({
       filtered_data_all_teams <- all_data |>
         filter(
           week %in% input$weekFilter,
-          role %in% input$roleFilter,
           region %in% input$regionFilter
         )
 
       return(filtered_data_all_teams)
     })
 
-
-    filtered_data <- reactive({
-      temp <- filtered_data_all_teams()
-      if (input$teamFilter != "All") {
-        temp <- temp |>
-          filter(team_name == input$teamFilter)
-      }
-
-      return(temp)
+    filtered_data_map_specific <- reactive({
+      filtered_data_weeks() |>
+        filter(map_name == input$mapSpecificSelection)
     })
 
-
-    selected_map_id <- reactive({
-      maps |>
-        filter(map_name == input$mapFilter) |>
-        pull(map_id)
+    filtered_data_team_specific <- reactive({
+      filtered_data_weeks() |>
+        filter(team_name == input$teamSpecificSelection)
     })
 
-    filtered_matches <- reactive({
-      filtered_matches <- matches |>
-        left_join(teams, by = c("team1_id" = "team_id")) |>
-        rename(team_1 = team_name) |>
-        left_join(teams, by = c("team2_id" = "team_id")) |>
-        rename(team_2 = team_name) |>
-        rename(region = region.x) |>
-        filter(
-          week %in% input$weekFilter,
-          region %in% input$regionFilter
+    filtered_data_details <- reactive({
+      filtered_data_weeks() |>
+        filter((team_name == input$teamSpecificSelection) & (map_name == input$mapSpecificSelection))
+    })
+
+    map_pickrates <- reactive({
+      maps_played_per_team <- filtered_data_map_specific() |>
+        group_by(team_name) |>
+        summarise(
+          maps_played = n_distinct(match_map_id)
         )
 
-      if (input$teamFilter != "All") {
-        filtered_matches <- filtered_matches |>
-          filter(
-            ((team_1 == input$teamFilter) | (team_2 == input$teamFilter))
+      heroes_pickrate_overall <- filtered_data_map_specific() |>
+        group_by(team_name, hero_name, role) |>
+        distinct(match_map_id, .keep_all = TRUE) |>
+        summarise(
+          maps_played_with_hero = n(),
+          maps_won_with_hero = sum(iswin),
+          .groups = "drop"
+        ) |>
+        left_join(maps_played_per_team, by = "team_name") |>
+        mutate(pickrate_per_team = maps_played_with_hero / maps_played) |>
+        group_by(hero_name, role) |>
+        summarise(
+          pickrate = mean(pickrate_per_team)
+        )
+
+      heroes_winrate <- filtered_data_map_specific() |>
+        group_by(hero_name, role) |>
+        summarise(
+          avg_winrate = mean(iswin),
+          .groups = "drop"
+        )
+
+      result <- heroes_pickrate_overall |>
+        left_join(heroes_winrate, by = "hero_name", suffix = c("", "_2"))
+
+      return(result)
+    })
+
+    output$mapSpecificPickrates <- renderPlot({
+      data <- map_pickrates()
+
+      role_colors <- c(
+        "tank" = "#FFCF59", # red
+        "sup" = "#4496B5", # blue
+        "dps" = "#FF7659" # green
+      )
+
+      if (!input$mapSpecificCompToggle) {
+        data |>
+          ggplot(aes(
+            x = reorder(hero_name, pickrate),
+            y = pickrate,
+            fill = role
+          )) +
+          geom_col() +
+          scale_fill_manual(values = role_colors) +
+          coord_flip() +
+          labs(
+            title = "Pickrates on Map",
+            subtitle = "Average pickrates across all teams",
+            x = "Hero",
+            y = "Pickrate"
           )
       }
-
-      filtered_match_ids <- filtered_matches |>
-        right_join(match_maps, by = "match_id") |>
-        filter(map_id == selected_map_id()) |>
-        select(match_id) |>
-        distinct()
-
-      filtered_matches <- filtered_matches |>
-        filter(match_id %in% filtered_match_ids$match_id)
-
-      return(filtered_matches)
     })
   })
 }

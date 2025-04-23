@@ -1,13 +1,13 @@
 detail_server <- function(id, all_data) {
   moduleServer(id, function(input, output, session) {
     filtered_data_weeks <- reactive({
-      filtered_data_all_teams <- all_data |>
+      filtered_data_all <- all_data |>
         filter(
           week %in% input$weekFilter,
           region %in% input$regionFilter
         )
 
-      return(filtered_data_all_teams)
+      return(filtered_data_all)
     })
 
     filtered_data_map_specific <- reactive({
@@ -25,43 +25,17 @@ detail_server <- function(id, all_data) {
         filter((team_name == input$teamSpecificSelection) & (map_name == input$mapSpecificSelection))
     })
 
+    general_pickrates <- reactive({
+      result <- calculate_weighted_pickrates(filtered_data_weeks())
+    })
+
     map_pickrates <- reactive({
-      maps_played_per_team <- filtered_data_map_specific() |>
-        group_by(team_name) |>
-        summarise(
-          maps_played = n_distinct(match_map_id)
-        )
-
-      heroes_pickrate_overall <- filtered_data_map_specific() |>
-        group_by(team_name, hero_name, role) |>
-        distinct(match_map_id, .keep_all = TRUE) |>
-        summarise(
-          maps_played_with_hero = n(),
-          maps_won_with_hero = sum(iswin),
-          .groups = "drop"
-        ) |>
-        left_join(maps_played_per_team, by = "team_name") |>
-        mutate(pickrate_per_team = maps_played_with_hero / maps_played) |>
-        group_by(hero_name, role) |>
-        summarise(
-          pickrate = mean(pickrate_per_team)
-        )
-
-      heroes_winrate <- filtered_data_map_specific() |>
-        group_by(hero_name, role) |>
-        summarise(
-          avg_winrate = mean(iswin),
-          .groups = "drop"
-        )
-
-      result <- heroes_pickrate_overall |>
-        left_join(heroes_winrate, by = "hero_name", suffix = c("", "_2"))
-
-      return(result)
+      result <- calculate_weighted_pickrates(filtered_data_map_specific())
     })
 
     output$mapSpecificPickrates <- renderPlot({
       data <- map_pickrates()
+      gen_data <- general_pickrates()
 
       role_colors <- c(
         "tank" = "#FFCF59", # red
@@ -72,8 +46,8 @@ detail_server <- function(id, all_data) {
       if (!input$mapSpecificCompToggle) {
         data |>
           ggplot(aes(
-            x = reorder(hero_name, pickrate),
-            y = pickrate,
+            x = reorder(hero_name, weighted_pickrate),
+            y = weighted_pickrate,
             fill = role
           )) +
           geom_col() +
@@ -83,7 +57,35 @@ detail_server <- function(id, all_data) {
             title = "Pickrates on Map",
             subtitle = "Average pickrates across all teams",
             x = "Hero",
-            y = "Pickrate"
+            y = "Pickrate",
+            caption = "Note: DPS and Support heroes appear more frequently as they occupy 2 slots per team, while Tank heroes only have 1 slot."
+          ) +
+          facet_wrap(~role, scales = "free")
+      } else {
+        data |>
+          left_join(gen_data, by = "hero_name", suffix = c("", "_gen")) |>
+          mutate(
+            pickrate_diff = weighted_pickrate - weighted_pickrate_gen,
+            color = if_else(pickrate_diff > 0, "pos", "neg")
+          ) |>
+          filter(maps_with_hero_total > 20) |>
+          ggplot(aes(
+            x = reorder(hero_name, pickrate_diff),
+            y = pickrate_diff,
+            fill = pickrate_diff > 0
+          )) +
+          geom_col() +
+          scale_fill_manual(
+            values = c("FALSE" = "#ed946b", "TRUE" = "#6bebed"),
+            labels = c("TRUE" = "Below Average", "FALSE" = "Above Average")
+          ) +
+          coord_flip() +
+          labs(
+            title = "Pickrate difference to OWCS average",
+            subtitle = "Pickrate difference in percentage points",
+            x = "Hero",
+            y = "Pickrate difference",
+            color = "Colors"
           )
       }
     })

@@ -11,9 +11,56 @@
 #' @note This file is currently in development and may be populated with shared
 #'   components as the application grows.
 #'
+#'
+calculate_weighted_pickrates <- function(data) {
+  maps_played_per_team <- data |>
+    group_by(team_name) |>
+    distinct(match_map_id) |>
+    summarise(
+      maps_played = n()
+    )
+
+  maps_played_total <- maps_played_per_team |>
+    summarise(
+      total_maps = sum(maps_played)
+    ) |>
+    pull(total_maps)
+
+  heroes_pickrate_overall <- data |>
+    group_by(team_name, hero_name, role) |>
+    distinct(match_map_id, .keep_all = TRUE) |>
+    summarise(
+      maps_played_with_hero = n(),
+      maps_won_with_hero = sum(iswin),
+      .groups = "drop"
+    ) |>
+    left_join(maps_played_per_team, by = "team_name") |>
+    group_by(hero_name, role) |>
+    summarise(
+      maps_with_hero_total = sum(maps_played_with_hero),
+      weighted_pickrate = maps_with_hero_total / maps_played_total,
+      .groups = "drop"
+    )
+
+  heroes_winrate <- data |>
+    group_by(hero_name, role) |>
+    summarise(
+      avg_winrate = mean(iswin),
+      .groups = "drop"
+    )
+
+  result <- heroes_pickrate_overall |>
+    left_join(heroes_winrate, by = "hero_name", suffix = c("", "_2"))
+
+  return(result)
+}
+
+
 
 calculate_pickrates <- function(filtered_data) {
   total_maps_val <- n_distinct(filtered_data$match_map_id)
+
+
 
   # Use the direct value instead of calling the reactive function
   pickrates <- filtered_data |>

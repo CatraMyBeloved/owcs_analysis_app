@@ -92,7 +92,7 @@ ui <- page_fluid(
     # Call each UI module
     overview_ui("overview"),
     team_ui("team"),
-    map_ui("map"),
+    detail_ui("detail"),
     interaction_ui("interaction"),
     ban_ui("ban"),
     nav_item(
@@ -174,7 +174,7 @@ server <- function(input, output, session) {
   # Call each server module, passing the data
   overview_server("overview", all_data_reactive())
   team_server("team", all_data_reactive(), app_data)
-  map_server("map", all_data_reactive())
+  detail_server("detail", all_data_reactive())
   ban_server("ban", all_bans_reactive())
   interaction_server("interaction", all_data_reactive())
 }

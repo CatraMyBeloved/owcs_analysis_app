@@ -437,19 +437,42 @@ team_server <- function(id, all_data, app_data) {
     })
 
     output$winrateWeekVis <- renderPlot({
-      winrate <- week_performance()
-      labels <- winrate |> pull(week)
+      win_rate_avg <- filtered_data() |>
+        summarize(wr = mean(iswin, na.rm = TRUE)) |>
+        pull(wr)
 
+      winrate <- week_performance()
+
+      # Create the plot
       winrate |>
-        ggplot(aes(x = week_numeric, y = winrate, group = 1)) +
+        ggplot(aes(x = week_numeric, y = winrate * 100, group = 1)) +
         geom_area(fill = "#6bebed", alpha = 0.5) +
+        geom_hline(
+          yintercept = win_rate_avg * 100,
+          color = "white",
+          linetype = "dashed"
+        ) +
         geom_point() +
         geom_line(color = "#33827e", linewidth = 1) +
+        scale_x_continuous(breaks = winrate$week_numeric, labels = winrate$week) +
+        annotate("text",
+          x = max(winrate$week_numeric) - 0.2,
+          y = win_rate_avg * 100 + 3,
+          label = "Team Winrate",
+          color = "white",
+          hjust = 1,
+          size = 3
+        ) +
         labs(
           title = "Winrate per Week",
           subtitle = "Map winrate on each week, including playoffs and LAN",
           x = "Week",
           y = "Map Winrate"
+        ) +
+        ylim(c(0, 100)) +
+        geom_text(aes(label = scales::percent(winrate, accuracy = 1)),
+          vjust = -0.8,
+          color = "white"
         )
     })
   })

@@ -28,66 +28,104 @@ predictors <- predictors |>
 predictors_collapsed <- predictors |> select(-dps, -sup, -dps_opp, -sup_opp)
 
 data_prep <- bind_cols(predictors_collapsed, labels) |>
-  mutate(iswin = as.factor(iswin))
+  mutate(iswin = as.factor(iswin)) |>
+  select(-rowid)
+
+data_split <- initial_split(data_prep, prop = 0.8, strata = iswin)
 
 recipe_pred <- recipe(iswin ~ ., data = data_prep) |>
   step_dummy_hash(all_nominal_predictors())
 
+folds <- vfold_cv(data_prep, v = 5, strata = iswin)
+
 # --------- LOG REGRESSION-----------
-model_win_log <- logistic_reg() |>
-  set_engine("glm") |>
+log_reg_spec <- logistic_reg(
+  penalty = tune(),
+  mixture = tune()
+) |>
+  set_engine("glmnet") |>
   set_mode("classification")
 
-workflow_pred_log <- workflow() |>
+grid_vals_log_reg <- grid_regular(
+  penalty(range = c(-5, 1), trans = log10_trans()),
+  mixture(range = c(0, 1)),
+  levels = c(10, 5)
+)
+
+log_reg_wf <- workflow() |>
   add_recipe(recipe_pred) |>
-  add_model(model_win_log)
+  add_model(log_reg_spec)
 
-data_split <- initial_split(data_prep, prop = 0.8, strata = iswin)
+log_reg_tune_results <- tune_grid(
+  log_reg_wf,
+  resamples = folds,
+  grid = grid_vals_log_reg,
+  metrics = metric_set(roc_auc, accuracy)
+)
 
-fit <- workflow_pred_log |> fit(data = training(data_split))
+log_reg_metrics <- collect_metrics(log_reg_tune_results)
 
-preds <- predict(fit, testing(data_split), type = "prob") |>
-  bind_cols(predict(fit, testing(data_split))) |>
-  bind_cols(testing(data_split))
+log_reg_best_params <- log_reg_tune_results |>
+  select_best(metric = "accuracy")
 
-metrics(preds, truth = iswin, estimate = .pred_class)
-roc_auc(preds, truth = iswin, .pred_0)
-conf_mat(preds, truth = iswin, .pred_class)
+final_log_wf <- log_reg_wf |>
+  finalize_workflow(log_reg_best_params)
+
+final_log_fit <- log_reg_wf |> fit(data = training(data_split))
+
+
+test_log_reg <- logistic_reg() |>
+  set_engine("glmnet") |>
+  set_args(
+    penalty = 1e-05,
+    mixture = 0.25
+  )
+
+test_fit <- fit(test_wf, data = training(data_split))
+
+test_wf <- workflow() |>
+  add_recipe(recipe_pred) |>
+  add_model(test_log_reg)
+
 
 #---------RANDOM FOREST----------
 
 grid_vals_rf <- grid_regular(
   trees(range = c(100, 1000)),
-  mtry(range = c(5, 30)),
+  finalize(mtry(), predictors),
   min_n(range = c(1, 10)),
   levels = 5
 )
 
-model_rf <-
+random_forest_spec <-
   rand_forest(
-    trees = tune(), # number of trees
-    mtry = tune(), # number of features to consider
-    min_n = tune() # minimum node size
+    trees = tune(),
+    mtry = tune(),
+    min_n = tune()
   ) |>
   set_engine("ranger") |>
   set_mode("classification")
 
-workflow_model_rf <- workflow() |>
-  add_model(model_rf) |>
+workflow_random_forest <- workflow() |>
+  add_model(random_forest_spec) |>
   add_recipe(recipe_pred)
-folds <- vfold_cv(data_prep, v = 5, strata = iswin)
 
-tune_results_rf <- tune_grid(
-  workflow_model_rf,
+random_forest_tune_results <- tune_grid(
+  workflow_random_forest,
   resamples = folds,
   grid = grid_vals_rf,
   metrics = metric_set(roc_auc, accuracy)
 )
 
+random_forest_metrics <- collect_metrics(random_forest_tune_results)
 
-#----------BOOSTED TREE------------
+random_forest_metrics |>
+  filter(.metric == "accuracy") |>
+  arrange(desc(mean))
 
-model_boost_tree_spec <- boost_tree(
+#----------BOOSTED TREE XGBOOST------------
+
+boosted_tree_spec <- boost_tree(
   mtry = tune(),
   trees = tune(),
   min_n = tune(),
@@ -98,28 +136,60 @@ model_boost_tree_spec <- boost_tree(
   set_engine("xgboost") |>
   set_mode("classification")
 
-workflow_boost_tree <- workflow() |>
+boosted_tree_wf <- workflow() |>
   add_recipe(recipe_pred) |>
   add_model(model_boost_tree_spec)
 
 
-boost_params <- parameters(
+grid_vals_bt <- grid_regular(
   finalize(mtry(), predictors),
   min_n(range = c(2, 10)),
   tree_depth(range = c(2, 10)),
   learn_rate(range = c(0.01, 0.5)),
   loss_reduction(range = c(0, 10)),
-  trees()
-)
-
-boost_grid <- grid_regular(
-  boost_params,
+  trees(range = c(100, 1000)),
   levels = 3
 )
 
-boost_tune <- tune_grid(
+boosted_tree_tune_results <- tune_grid(
   workflow_boost_tree,
   resamples = folds,
-  grid = boost_grid,
+  grid = boosted_tree_grid,
   metrics = metric_set(roc_auc, accuracy)
 )
+
+boosted_tree_metrics <- collect_metrics(boosted_tree_tune_results)
+
+boosted_tree_metrics |>
+  ggplot(aes(x = trees, y = mean, color = mtry)) +
+  geom_point() +
+  geom_line()
+
+#---------BOOSTED TREE CATBOOST---------
+#
+
+c5_spec <- boost_tree(
+  trees = tune(),
+  min_n = tune()
+) |>
+  set_engine("C5.0") |>
+  set_mode("classification")
+
+c5_workflow <- workflow() |>
+  add_recipe(recipe_pred) |>
+  add_model(c5_spec)
+
+c5_grid <- grid_regular(
+  trees(range = c(1, 100)),
+  min_n(range = c(1, 50)),
+  levels = 5
+)
+
+c5_results <- tune_grid(
+  c5_workflow,
+  resamples = folds,
+  grid = c5_grid,
+  metrics = metric_set(roc_auc, accuracy)
+)
+
+c5_metrics <- collect_metrics(c5_results)

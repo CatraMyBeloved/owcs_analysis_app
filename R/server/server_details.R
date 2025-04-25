@@ -60,7 +60,8 @@ detail_server <- function(id, all_data) {
             y = "Pickrate",
             caption = "Note: DPS and Support heroes appear more frequently as they occupy 2 slots per team, while Tank heroes only have 1 slot."
           ) +
-          facet_wrap(~role, scales = "free")
+          facet_wrap(~role, scales = "free") +
+          guides(fill = guide_legend(title = NULL))
       } else {
         data |>
           left_join(gen_data, by = "hero_name", suffix = c("", "_gen")) |>
@@ -68,7 +69,7 @@ detail_server <- function(id, all_data) {
             pickrate_diff = weighted_pickrate - weighted_pickrate_gen,
             color = if_else(pickrate_diff > 0, "pos", "neg")
           ) |>
-          filter(maps_with_hero_total > 20) |>
+          slice_max(order_by = abs(pickrate_diff), n = 15) |>
           ggplot(aes(
             x = reorder(hero_name, pickrate_diff),
             y = pickrate_diff,
@@ -86,7 +87,8 @@ detail_server <- function(id, all_data) {
             x = "Hero",
             y = "Pickrate difference",
             color = "Colors"
-          )
+          ) +
+          guides(fill = guide_legend(title = NULL))
       }
     })
   })

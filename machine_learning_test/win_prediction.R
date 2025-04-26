@@ -34,6 +34,7 @@ data_prep <- bind_cols(predictors_collapsed, labels) |>
 data_split <- initial_split(data_prep, prop = 0.8, strata = iswin)
 
 recipe_pred <- recipe(iswin ~ ., data = data_prep) |>
+  step_zv() |> 
   step_dummy_hash(all_nominal_predictors())
 
 folds <- vfold_cv(data_prep, v = 5, strata = iswin)

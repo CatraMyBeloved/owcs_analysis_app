@@ -37,11 +37,11 @@ data_prep <- bind_cols(predictors_collapsed, labels) |>
 
 data_split <- initial_split(data_prep, prop = 0.8, strata = iswin)
 
-recipe_pred <- recipe(iswin ~ ., data = data_prep) |>
+recipe_pred <- recipe(iswin ~ ., data = training(data_split)) |>
   step_zv() |>
   step_dummy_hash(all_nominal_predictors())
 
-folds <- vfold_cv(data_prep, v = 5, strata = iswin)
+folds <- vfold_cv(training(data_split), v = 5, strata = iswin)
 
 # --------- LOG REGRESSION-----------
 log_reg_spec <- logistic_reg(
@@ -71,9 +71,6 @@ log_reg_tune_results <- tune_grid(
 
 log_reg_metrics <- collect_metrics(log_reg_tune_results)
 
-log_reg_best_params <- log_reg_tune_results |>
-  select_best(metric = "accuracy")
-
 
 #---------RANDOM FOREST----------
 
@@ -81,7 +78,7 @@ grid_vals_rf <- grid_regular(
   trees(range = c(100, 1000)),
   finalize(mtry(), predictors),
   min_n(range = c(1, 10)),
-  levels = 10
+  levels = 5
 )
 
 random_forest_spec <-
@@ -106,10 +103,6 @@ random_forest_tune_results <- tune_grid(
 )
 
 random_forest_metrics <- collect_metrics(random_forest_tune_results)
-
-random_forest_metrics |>
-  filter(.metric == "accuracy") |>
-  arrange(desc(mean))
 
 #----------BOOSTED TREE XGBOOST------------
 
@@ -136,7 +129,7 @@ grid_vals_bt <- grid_random(
   learn_rate(range = c(0.01, 0.5)),
   loss_reduction(range = c(0, 10)),
   trees(range = c(100, 2000)),
-  size = 500
+  size = 120
 )
 
 boosted_tree_tune_results <- tune_grid(
@@ -150,7 +143,7 @@ boosted_tree_tune_results <- tune_grid(
 boosted_tree_metrics <- collect_metrics(boosted_tree_tune_results)
 
 #---------BOOSTED TREE CATBOOST---------
-#
+
 
 c5_spec <- boost_tree(
   trees = tune(),
@@ -179,14 +172,45 @@ c5_results <- tune_grid(
 
 c5_metrics <- collect_metrics(c5_results)
 
+#-----------MLP----------------
+
+nn_spec <- mlp(
+  hidden_units = tune(),
+  penalty = tune(),
+  epochs = tune(),
+) |>
+  set_engine("nnet", MaxNWts = 50000) %>%
+  set_mode("classification")
+
+nn_workflow <- workflow() |>
+  add_recipe(recipe_pred) |>
+  add_model(nn_spec)
+
+nn_grid <- grid_regular(
+  hidden_units(range = c(5, 30)),
+  penalty(range = c(-5, -1), trans = log10_trans()),
+  epochs(range = c(50, 300)),
+  levels = 5
+)
+
+nn_tune_results <- tune_grid(
+  nn_workflow,
+  resamples = folds,
+  grid = nn_grid,
+  metrics = metric_set(roc_auc, accuracy),
+  control = control_stack_grid()
+)
+
+nn_metrics <- collect_metrics(nn_tune_results)
 
 #-----------Model Stack--------------
-#
+
 
 model_stack <- stacks() |>
   add_candidates(log_reg_tune_results) |>
   add_candidates(random_forest_tune_results) |>
-  add_candidates(c5_results)
+  add_candidates(c5_results) |>
+  add_candidates(nn_tune_results)
 
 model_stack_2 <- model_stack |>
   blend_predictions()
@@ -194,4 +218,29 @@ model_stack_2 <- model_stack |>
 model_stack_2 <- model_stack_2 |>
   fit_members()
 
-model_stack_2
+test_data <- testing(data_split)
+
+test_preds <- predict(model_stack_2, test_data)
+test_probs <- predict(model_stack_2, test_data, type = "prob")
+
+test_results <- test_data |>
+  select(iswin) |>
+  bind_cols(
+    predicted = test_preds,
+    test_probs
+  )
+
+conf_mat <- conf_mat(test_results, truth = iswin, estimate = .pred_class)
+print(conf_mat)
+
+accuracy_table <- test_results |>
+  accuracy(truth = iswin, .pred_class) |>
+  summarise(
+    avg_accuracy = mean(.estimate)
+  )
+
+if (!dir.exists("models")) {
+  dir.create("models")
+}
+
+saveRDS(random_forest_tune_results, "models/random_forest_tune_results.rds")

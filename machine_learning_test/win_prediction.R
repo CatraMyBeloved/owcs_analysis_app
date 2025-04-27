@@ -75,7 +75,7 @@ log_reg_metrics <- collect_metrics(log_reg_tune_results)
 #---------RANDOM FOREST----------
 
 grid_vals_rf <- grid_regular(
-  trees(range = c(100, 1000)),
+  trees(range = c(100, 2000)),
   finalize(mtry(), predictors),
   min_n(range = c(1, 10)),
   levels = 5

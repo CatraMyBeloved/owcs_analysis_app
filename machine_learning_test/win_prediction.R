@@ -129,7 +129,7 @@ grid_vals_bt <- grid_random(
   learn_rate(range = c(0.01, 0.5)),
   loss_reduction(range = c(0, 10)),
   trees(range = c(100, 2000)),
-  size = 120
+  size = 150
 )
 
 boosted_tree_tune_results <- tune_grid(
@@ -142,7 +142,7 @@ boosted_tree_tune_results <- tune_grid(
 
 boosted_tree_metrics <- collect_metrics(boosted_tree_tune_results)
 
-#---------BOOSTED TREE CATBOOST---------
+#---------BOOSTED TREE C5---------
 
 
 c5_spec <- boost_tree(
@@ -209,14 +209,14 @@ nn_metrics <- collect_metrics(nn_tune_results)
 model_stack <- stacks() |>
   add_candidates(log_reg_tune_results) |>
   add_candidates(random_forest_tune_results) |>
-  add_candidates(c5_results) |>
-  add_candidates(nn_tune_results)
+  add_candidates(c5_results)
 
 model_stack_2 <- model_stack |>
   blend_predictions()
 
 model_stack_2 <- model_stack_2 |>
   fit_members()
+
 
 test_data <- testing(data_split)
 
@@ -230,6 +230,12 @@ test_results <- test_data |>
     test_probs
   )
 
+test_results <- test_results %>%
+  mutate(
+    iswin = factor(iswin, levels = c("0", "1")),
+    .pred_class = factor(.pred_class, levels = c("0", "1"))
+  )
+
 conf_mat <- conf_mat(test_results, truth = iswin, estimate = .pred_class)
 print(conf_mat)
 
@@ -238,9 +244,3 @@ accuracy_table <- test_results |>
   summarise(
     avg_accuracy = mean(.estimate)
   )
-
-if (!dir.exists("models")) {
-  dir.create("models")
-}
-
-saveRDS(random_forest_tune_results, "models/random_forest_tune_results.rds")

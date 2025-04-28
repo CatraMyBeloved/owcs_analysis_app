@@ -37,6 +37,15 @@ prediction_ui <- function(id) {
         )
       ),
 
+      # Add this near the top of your prediction_ui function, right after the nav_panel title
+      card(
+        status = "warning",
+        card_header("⚠️ Experimental Feature"),
+        p("This prediction tool is experimental and should be used for fun rather than making strategic decisions."),
+        p("The model works best with hero combinations and matchups that appear frequently in past tournaments. Unusual team compositions or rarely-seen hero picks may result in less accurate predictions."),
+        p("Think of it like asking a coach who has only watched certain matches - they can make educated guesses based on what they've seen before, but can't predict entirely new situations with the same confidence.")
+      ),
+
       # Main content
       card(
         card_header("Team Compositions"),

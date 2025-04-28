@@ -11,7 +11,8 @@ data <- comps_with_opponents |>
   ) |>
   group_by(round_id) |>
   slice_sample(n = 1) |>
-  ungroup()
+  ungroup() |>
+  select(-round_id)
 
 labels <- data |> select(iswin)
 
@@ -32,8 +33,7 @@ predictors <- predictors |>
 predictors_collapsed <- predictors |> select(-dps, -sup, -dps_opp, -sup_opp)
 
 data_prep <- bind_cols(predictors_collapsed, labels) |>
-  mutate(iswin = as.factor(iswin)) |>
-  select(-rowid)
+  mutate(iswin = as.factor(iswin))
 
 data_split <- initial_split(data_prep, prop = 0.8, strata = iswin)
 

@@ -19,6 +19,14 @@ library(ggrepel)
 library(DT)
 library(aws.s3)
 library(RColorBrewer)
+library(tidymodels)
+library(text2vec) # Add this explicitly
+library(textrecipes) # Add this if you're using it
+library(glmnet) # For logistic regression model
+library(ranger) # For random forest model
+library(parsnip) # Core tidymodels component
+library(stacks) # For model stacking
+library(C50) # If using C5.0 boosted trees
 
 source("R/server/server_shared.R")
 source("R/ui/ui_shared.R")
@@ -95,6 +103,7 @@ ui <- page_fluid(
     detail_ui("detail"),
     interaction_ui("interaction"),
     ban_ui("ban"),
+    prediction_ui("prediction"), # Add this line
     nav_item(
       input_dark_mode(id = "dark_mode", mode = "dark")
     )
@@ -177,6 +186,7 @@ server <- function(input, output, session) {
   detail_server("detail", all_data_reactive())
   ban_server("ban", all_bans_reactive())
   interaction_server("interaction", all_data_reactive())
+  prediction_server("prediction", app_data) # Add this line
 }
 
 # Run the application

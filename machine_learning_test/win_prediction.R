@@ -7,7 +7,7 @@ data <- comps_with_opponents |>
   left_join(maps, by = "map_id") |>
   select(
     -match_map_id, -teamid, -teamid_opp,
-    -map_win_team_id, -match_id, -map_id, -mode
+    -map_win_team_id, -match_id, -map_id
   ) |>
   group_by(round_id) |>
   slice_sample(n = 1) |>
@@ -54,7 +54,7 @@ log_reg_spec <- logistic_reg(
 grid_vals_log_reg <- grid_regular(
   penalty(range = c(-5, 1), trans = log10_trans()),
   mixture(range = c(0, 1)),
-  levels = c(10, 5)
+  levels = 10
 )
 
 log_reg_wf <- workflow() |>
@@ -244,3 +244,5 @@ accuracy_table <- test_results |>
   summarise(
     avg_accuracy = mean(.estimate)
   )
+
+recipe

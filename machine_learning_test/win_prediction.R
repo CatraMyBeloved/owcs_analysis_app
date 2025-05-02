@@ -2,10 +2,14 @@ library(future)
 library(stacks)
 plan(multisession, workers = 4)
 
+
+
 data <- comps_with_opponents |>
   left_join(match_maps, by = "match_map_id") |>
   left_join(maps, by = "map_id") |>
   left_join(matches, by = "match_id") |>
+  left_join(teams, by = "team_name") |>
+  left_join(predictors_bans, by = c("match_map_id", "team_id" = "team_id")) |>
   select(
     -match_map_id, -teamid, -teamid_opp,
     -map_win_team_id, -match_id, -map_id,
@@ -14,7 +18,16 @@ data <- comps_with_opponents |>
   group_by(round_id) |>
   slice_sample(n = 1) |>
   ungroup() |>
-  select(-round_id)
+  left_join(heroes, by = c("hero_id")) |>
+  rename(banned_hero = hero_name) |>
+  left_join(heroes, by = c("hero_id_opp" = "hero_id")) |>
+  rename(banned_hero_opp = hero_name) |>
+  select(
+    -round_id, -team_id, -region, -hero_id, -hero_id_opp,
+    -role.x, -role.y
+  )
+
+
 
 labels <- data |> select(iswin)
 
@@ -35,15 +48,39 @@ predictors <- predictors |>
 predictors_collapsed <- predictors |> select(-dps, -sup, -dps_opp, -sup_opp)
 
 data_prep <- bind_cols(predictors_collapsed, labels) |>
-  mutate(iswin = as.factor(iswin))
+  mutate(iswin = as.factor(iswin)) |>
+  select(-rowid, -tank, -tank_opp, -dps_str, -dps_str_opp, -sup_str, -sup_str_opp)
 
 data_split <- initial_split(data_prep, prop = 0.8, strata = iswin)
 
 recipe_pred <- recipe(iswin ~ ., data = training(data_split)) |>
-  step_tokenize(all_nominal_predictors(), token = "regex", options = list(pattern = ",")) |>
-  step_dummy_hash(all_nominal_predictors(), num_terms = 64)
+  step_dummy_hash(all_nominal_predictors(), num_terms = 16) |>
+  step_zv()
+
 
 folds <- vfold_cv(training(data_split), v = 5, strata = iswin)
+
+test_rf <- rand_forest(
+  trees = 1500,
+  mtry = 30,
+  min_n = 1
+) |>
+  set_engine("ranger") |>
+  set_mode("classification")
+
+
+test_wf <- workflow() |>
+  add_model(test_rf) |>
+  add_recipe(recipe_pred)
+
+cv_results <- test_wf |>
+  fit_resamples(
+    resamples = folds,
+    metrics = metric_set(accuracy, roc_auc)
+  )
+
+cv_metrics <- collect_metrics(cv_results)
+
 
 # --------- LOG REGRESSION-----------
 log_reg_spec <- logistic_reg(

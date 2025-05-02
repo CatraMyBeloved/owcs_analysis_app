@@ -100,3 +100,8 @@ comp_matrix <- comp_matrix |>
 
 hero_features <- comp_matrix %>%
   select(starts_with("has_") & !contains("_opp"), heroes_played)
+
+predictors_bans <- bans |>
+  inner_join(bans, by = "match_map_id", relationship = "many-to-many", suffix = c("", "_opp")) |>
+  filter(team_id != team_id_opp) |>
+  select(-first_bool, -team_id_opp, -first_bool_opp)

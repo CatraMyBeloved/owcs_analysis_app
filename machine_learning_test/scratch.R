@@ -1,7 +1,7 @@
 best_params <- random_forest_tune_results %>%
   select_best(metric = "accuracy")
 
-final_workflow <- c5_workflow %>%
+final_workflow <- workflow_random_forest %>%
   finalize_workflow(best_params)
 
 data_prep <- data_prep |>

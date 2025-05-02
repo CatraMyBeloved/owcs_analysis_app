@@ -1,4 +1,4 @@
-best_params <- c5_tuning_results %>%
+best_params <- random_forest_tune_results %>%
   select_best(metric = "accuracy")
 
 final_workflow <- c5_workflow %>%
@@ -12,4 +12,4 @@ data_prep <- data_prep |>
 final_fitted_model <- final_workflow %>%
   fit(data = data_prep)
 
-saveRDS(final_fitted_model, "models/c5_model_final.rds")
+saveRDS(final_fitted_model, "models/rand_forest_model_final.rds")

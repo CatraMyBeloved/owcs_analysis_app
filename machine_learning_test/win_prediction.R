@@ -5,9 +5,11 @@ plan(multisession, workers = 4)
 data <- comps_with_opponents |>
   left_join(match_maps, by = "match_map_id") |>
   left_join(maps, by = "map_id") |>
+  left_join(matches, by = "match_id") |>
   select(
     -match_map_id, -teamid, -teamid_opp,
-    -map_win_team_id, -match_id, -map_id
+    -map_win_team_id, -match_id, -map_id,
+    -bracket, -week, -date, -team1_id, -team2_id, -mode
   ) |>
   group_by(round_id) |>
   slice_sample(n = 1) |>
@@ -38,8 +40,8 @@ data_prep <- bind_cols(predictors_collapsed, labels) |>
 data_split <- initial_split(data_prep, prop = 0.8, strata = iswin)
 
 recipe_pred <- recipe(iswin ~ ., data = training(data_split)) |>
-  step_zv() |>
-  step_dummy_hash(all_nominal_predictors())
+  step_tokenize(all_nominal_predictors(), token = "regex", options = list(pattern = ",")) |>
+  step_dummy_hash(all_nominal_predictors(), num_terms = 64)
 
 folds <- vfold_cv(training(data_split), v = 5, strata = iswin)
 
@@ -207,7 +209,6 @@ nn_metrics <- collect_metrics(nn_tune_results)
 
 
 model_stack <- stacks() |>
-  add_candidates(log_reg_tune_results) |>
   add_candidates(random_forest_tune_results) |>
   add_candidates(c5_results)
 
@@ -245,4 +246,46 @@ accuracy_table <- test_results |>
     avg_accuracy = mean(.estimate)
   )
 
-recipe
+#----------------SVM-------------------
+
+# Load required libraries
+library(tidymodels)
+library(kernlab)
+
+# Create SVM specification
+svm_spec <- svm_rbf(
+  cost = tune(),
+  rbf_sigma = tune()
+) %>%
+  set_engine("kernlab") %>%
+  set_mode("classification")
+
+# Create recipe
+svm_recipe <- recipe(iswin ~ ., data = training(data_split)) |>
+  step_string2factor(all_string_predictors()) |>
+  # Step 2: Create dummy variables for categorical data
+  step_dummy_hash(all_nominal_predictors())
+
+# Create workflow
+svm_workflow <- workflow() %>%
+  add_recipe(svm_recipe) %>%
+  add_model(svm_spec)
+
+svm_grid <- grid_regular(
+  cost(range = c(-1, 2)), # 10^-1 to 10^2 (0.1 to 100)
+  rbf_sigma(range = c(-3, 0)), # 10^-3 to 10^0 (0.001 to 1)
+  levels = 5 # 5 values for each parameter
+)
+
+svm_results <- tune_grid(
+  svm_workflow, # The workflow you created earlier
+  resamples = folds, # Cross-validation folds
+  grid = svm_grid, # Our custom grid
+  metrics = metric_set(
+    accuracy,
+    roc_auc
+  ),
+  control = control_grid(save_pred = TRUE) # Save predictions for analysis
+)
+
+svm_metrics <- collect_metrics(svm_results)

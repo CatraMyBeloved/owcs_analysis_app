@@ -26,7 +26,21 @@ detail_ui <- function(id) {
             plotOutput(ns("mapSpecificPickrates")),
             plotOutput(ns("mapSpecificQuadrants"))
           ),
-          nav_panel(title = "Maps across team"),
+          nav_panel(
+            title = "Maps across team",
+            fluidRow(
+              column(6, selectInput(ns("teamSpecificSelection"),
+                "Select Team",
+                choices = team_list
+              ), ),
+              column(6, checkboxInput(
+                ns("teamSpecificCompToggle"),
+                "Comparison vs OWCS average"
+              ))
+            ),
+            plotOutput(ns("teamSpecificPickrates")),
+            plotOutput(ns("teamSpecificQuadrants"))
+          ),
           nav_panel(title = "Map - Team")
         )
       )

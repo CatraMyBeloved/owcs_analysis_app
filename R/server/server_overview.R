@@ -39,48 +39,5 @@ overview_server <- function(id, all_data) {
           role, map_name, mode, team_name, team, iswin
         )
     })
-
-    # Calculations
-    total_maps <- reactive({
-      n_distinct(filtered_data()$match_map_id)
-    })
-
-    pickrates <- reactive({
-      pickrates <- calculate_pickrates(filtered_data())
-      return(pickrates)
-    })
-
-    # Outputs
-    output$Pickrates <- renderDT({
-      pickrates() |>
-        select(hero_name, appearances, pickrate, winrate) |>
-        datatable(
-          colnames = c("Hero", "Maps played", "Pickrate", "Winrate"),
-          filter = "top",
-          options = list(
-            searching = TRUE,
-            pageLength = 10,
-            autoWidth = TRUE
-          )
-        ) |>
-        formatPercentage(c("pickrate", "winrate"), digits = 1)
-    })
-
-    output$PickratesVis <- renderPlot({
-      role_colors <- c(
-        "tank" = "#FFCF59", # red
-        "sup" = "#4496B5", # blue
-        "dps" = "#FF7659" # green
-      )
-
-      pickrates() |>
-        mutate(pickrate = pickrate * 100) |>
-        head(input$topnPickrates) |>
-        ggplot(aes(x = reorder(hero_name, pickrate), y = pickrate, fill = role)) +
-        geom_col() +
-        scale_fill_manual(values = role_colors) +
-        labs(x = "Hero", y = "Pickrate (%)") +
-        coord_flip()
-    })
   })
 }

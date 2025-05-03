@@ -98,7 +98,6 @@ ui <- page_fluid(
   titlePanel("OWCS Team Composition Analysis Tool"),
   navset_card_tab(
     # Call each UI module
-    overview_ui("overview"),
     team_ui("team"),
     detail_ui("detail"),
     interaction_ui("interaction"),
@@ -181,7 +180,6 @@ server <- function(input, output, session) {
   })
 
   # Call each server module, passing the data
-  overview_server("overview", all_data_reactive())
   team_server("team", all_data_reactive(), app_data)
   detail_server("detail", all_data_reactive())
   ban_server("ban", all_bans_reactive())

@@ -247,7 +247,8 @@ nn_metrics <- collect_metrics(nn_tune_results)
 
 model_stack <- stacks() |>
   add_candidates(random_forest_tune_results) |>
-  add_candidates(c5_results)
+  add_candidates(c5_results) |>
+  add_candidates(svm_results)
 
 model_stack_2 <- model_stack |>
   blend_predictions()
@@ -255,6 +256,7 @@ model_stack_2 <- model_stack |>
 model_stack_2 <- model_stack_2 |>
   fit_members()
 
+saveRDS(model_stack_2, "models/model_stack_trees.rds")
 
 test_data <- testing(data_split)
 
@@ -311,7 +313,7 @@ svm_workflow <- workflow() %>%
 svm_grid <- grid_regular(
   cost(range = c(-1, 2)), # 10^-1 to 10^2 (0.1 to 100)
   rbf_sigma(range = c(-3, 0)), # 10^-3 to 10^0 (0.001 to 1)
-  levels = 5 # 5 values for each parameter
+  levels = 3 # 5 values for each parameter
 )
 
 svm_results <- tune_grid(

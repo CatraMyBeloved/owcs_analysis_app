@@ -186,7 +186,7 @@ server <- function(input, output, session) {
   detail_server("detail", all_data_reactive())
   ban_server("ban", all_bans_reactive())
   interaction_server("interaction", all_data_reactive())
-  prediction_server("prediction", app_data) # Add this line
+  prediction_server("prediction", app_data)
 }
 
 # Run the application

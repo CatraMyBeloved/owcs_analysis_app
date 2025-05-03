@@ -91,5 +91,104 @@ detail_server <- function(id, all_data) {
           guides(fill = guide_legend(title = NULL))
       }
     })
+
+    hero_preferences_map_specific <- reactive({
+      hero_data <- map_pickrates() |>
+        left_join(
+          general_pickrates(),
+          by = "hero_name",
+          suffix = c("_map", "_general")
+        ) |>
+        mutate(
+          pickrate_deviation = weighted_pickrate_map - weighted_pickrate_general,
+          winrate_deviation = avg_winrate_map - avg_winrate_general,
+          category = case_when(
+            (winrate_deviation < 0) & (pickrate_deviation < 0) ~ "Wisely Avoided",
+            (winrate_deviation > 0) & (pickrate_deviation < 0) ~ "Underused Strength",
+            (winrate_deviation < 0) & (pickrate_deviation > 0) ~ "Overused Weakness",
+            (winrate_deviation > 0) & (pickrate_deviation > 0) ~ "Core Strength"
+          )
+        )
+    })
+
+    output$mapSpecificQuadrants <- renderPlot({
+      hero_data <- hero_preferences_map_specific()
+
+      x_limit <- max(abs(hero_data$winrate_deviation)) * 1.05
+      y_limit <- max(abs(hero_data$pickrate_deviation)) * 1.05
+
+      quadrant_colors <- c(
+        "Wisely Avoided" = "#8491B4", # Muted blue-gray
+        "Underused Strength" = "#41B6E6", # Bright blue
+        "Overused Weakness" = "#E6A243", # Orange
+        "Core Strength" = "#579920" # Green
+      )
+
+      if (max(hero_data$maps_with_hero_total_map) > 20) {
+        hero_data <- hero_data |>
+          filter(maps_with_hero_total_map > 2)
+      }
+
+      hero_data |>
+        ggplot(aes(
+          x = winrate_deviation,
+          y = pickrate_deviation,
+          color = category
+        )) +
+        geom_point(size = 3) +
+        geom_hline(yintercept = 0, linewidth = 1.5, color = "#D6D6D6") +
+        geom_vline(xintercept = 0, linewidth = 1.5, color = "#D6D6D6") +
+        coord_cartesian(xlim = c(-x_limit, x_limit), ylim = c(-y_limit, y_limit)) +
+        annotate("rect",
+          xmin = 0, xmax = x_limit, ymin = 0, ymax = y_limit,
+          fill = "#7AC14233", alpha = 0.15
+        ) +
+        annotate("rect",
+          xmin = -x_limit, xmax = 0, ymin = 0, ymax = y_limit,
+          fill = "#E6A24333", alpha = 0.15
+        ) +
+        annotate("rect",
+          xmin = 0, xmax = x_limit, ymin = -y_limit, ymax = 0,
+          fill = "#41B6E633", alpha = 0.15
+        ) +
+        annotate("rect",
+          xmin = -x_limit, xmax = 0, ymin = -y_limit, ymax = 0,
+          fill = "#8491B433", alpha = 0.15
+        ) +
+        # Quadrant labels
+        annotate("text",
+          x = x_limit * 0.7, y = y_limit * 0.9, label = "CORE STRENGTHS",
+          size = 3.5, color = "#FFFFFF"
+        ) +
+        annotate("text",
+          x = -x_limit * 0.7, y = y_limit * 0.9, label = "OVERUSED WEAKNESSES",
+          size = 3.5, color = "#FFFFFF"
+        ) +
+        annotate("text",
+          x = x_limit * 0.7, y = -y_limit * 0.9, label = "UNDERUSED STRENGTHS",
+          size = 3.5, color = "#FFFFFF"
+        ) +
+        annotate("text",
+          x = -x_limit * 0.7, y = -y_limit * 0.9, label = "WISELY AVOIDED",
+          size = 3.5, color = "#FFFFFF"
+        ) +
+        geom_text_repel(
+          aes(label = hero_name),
+          size = 3,
+          color = "#FFFFFF",
+          bg.color = "#2D2D2D",
+          bg.r = 0.15,
+          max.overlaps = 15,
+          seed = 42
+        ) +
+        labs(
+          title = paste0(input$mapSpecificSelection, "Hero Performance"),
+          subtitle = "Comparing pick rate and win rate relative to league averages",
+          x = "Win Rate Deviation from League Average",
+          y = "Pick Rate Deviation from League Average"
+        ) +
+        guides(color = "none") +
+        scale_color_manual(values = quadrant_colors)
+    })
   })
 }

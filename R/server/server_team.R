@@ -182,7 +182,6 @@ team_server <- function(id, all_data, app_data) {
         guides(color = "none")
     })
 
-    # TODO: gotta work on this stuff to account for pickrate per team
 
     hero_preferences <- reactive({
       maps_played_per_team <- filtered_data_all() |>

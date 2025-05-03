@@ -23,7 +23,8 @@ detail_ui <- function(id) {
                 "Comparison vs OWCS average"
               ))
             ),
-            plotOutput(ns("mapSpecificPickrates"))
+            plotOutput(ns("mapSpecificPickrates")),
+            plotOutput(ns("mapSpecificQuadrants"))
           ),
           nav_panel(title = "Maps across team"),
           nav_panel(title = "Map - Team")

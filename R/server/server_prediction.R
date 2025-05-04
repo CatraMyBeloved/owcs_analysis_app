@@ -4,8 +4,7 @@ prediction_server <- function(id, app_data) {
     # Load models once at startup
     models <- list(
       "Random Forest" = readRDS("models/random_forest_model_final.rds"),
-      "Boosted Tree" = readRDS("models/c5_model_final.rds"),
-      "Stacked Model" = readRDS("models/model_stack_trees.rds")
+      "Boosted Tree" = readRDS("models/c5_model_final.rds")
     )
 
 

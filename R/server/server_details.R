@@ -39,6 +39,12 @@ detail_server <- function(id, all_data) {
       data <- map_pickrates()
       gen_data <- general_pickrates()
 
+      # Define the variable to use based on the selected statistic type
+      stat_var <- if (input$statType == "winrate") "avg_winrate" else "weighted_pickrate"
+      stat_var_gen <- if (input$statType == "winrate") "avg_winrate_gen" else "weighted_pickrate_gen"
+      y_label <- if (input$statType == "winrate") "Winrate" else "Pickrate"
+      title_prefix <- if (input$statType == "winrate") "Winrates" else "Pickrates"
+
       role_colors <- c(
         "tank" = "#FFCF59", # red
         "sup" = "#4496B5", # blue
@@ -48,18 +54,18 @@ detail_server <- function(id, all_data) {
       if (!input$mapSpecificCompToggle) {
         data |>
           ggplot(aes(
-            x = reorder(hero_name, weighted_pickrate),
-            y = weighted_pickrate,
+            x = reorder(hero_name, .data[[stat_var]]),
+            y = .data[[stat_var]],
             fill = role
           )) +
           geom_col() +
           scale_fill_manual(values = role_colors) +
           coord_flip() +
           labs(
-            title = "Pickrates on Map",
-            subtitle = "Average pickrates across all teams",
+            title = paste0(title_prefix, " on Map"),
+            subtitle = "Average across all teams",
             x = "Hero",
-            y = "Pickrate",
+            y = y_label,
             caption = "Note: DPS and Support heroes appear more frequently as they occupy 2 slots per team, while Tank heroes only have 1 slot."
           ) +
           facet_wrap(~role, scales = "free") +
@@ -68,14 +74,14 @@ detail_server <- function(id, all_data) {
         data |>
           left_join(gen_data, by = "hero_name", suffix = c("", "_gen")) |>
           mutate(
-            pickrate_diff = weighted_pickrate - weighted_pickrate_gen,
-            color = if_else(pickrate_diff > 0, "pos", "neg")
+            stat_diff = .data[[stat_var]] - .data[[stat_var_gen]],
+            color = if_else(stat_diff > 0, "pos", "neg")
           ) |>
-          slice_max(order_by = abs(pickrate_diff), n = 15) |>
+          slice_max(order_by = abs(stat_diff), n = 15) |>
           ggplot(aes(
-            x = reorder(hero_name, pickrate_diff),
-            y = pickrate_diff,
-            fill = pickrate_diff > 0
+            x = reorder(hero_name, stat_diff),
+            y = stat_diff,
+            fill = stat_diff > 0
           )) +
           geom_col() +
           scale_fill_manual(
@@ -84,10 +90,10 @@ detail_server <- function(id, all_data) {
           ) +
           coord_flip() +
           labs(
-            title = "Pickrate difference to OWCS average",
-            subtitle = "Pickrate difference in percentage points",
+            title = paste0(y_label, " difference to OWCS average"),
+            subtitle = paste0(y_label, " difference in percentage points"),
             x = "Hero",
-            y = "Pickrate difference",
+            y = paste0(y_label, " difference"),
             color = "Colors"
           ) +
           guides(fill = guide_legend(title = NULL))

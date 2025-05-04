@@ -14,13 +14,18 @@ detail_ui <- function(id) {
           nav_panel(
             title = "Teams across map",
             fluidRow(
-              column(6, selectInput(ns("mapSpecificSelection"),
+              column(4, selectInput(ns("mapSpecificSelection"),
                 "Select Map",
                 choices = map_list
-              ), ),
-              column(6, checkboxInput(
+              )),
+              column(4, checkboxInput(
                 ns("mapSpecificCompToggle"),
                 "Comparison vs OWCS average"
+              )),
+              column(4, selectInput(ns("statType"),
+                "Statistic Type",
+                choices = c("Pickrate" = "pickrate", "Winrate" = "winrate"),
+                selected = "pickrate"
               ))
             ),
             plotOutput(ns("mapSpecificPickrates")),

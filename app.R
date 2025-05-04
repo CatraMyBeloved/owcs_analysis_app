@@ -20,13 +20,13 @@ library(DT)
 library(aws.s3)
 library(RColorBrewer)
 library(tidymodels)
-library(text2vec) # Add this explicitly
-library(textrecipes) # Add this if you're using it
-library(glmnet) # For logistic regression model
-library(ranger) # For random forest model
-library(parsnip) # Core tidymodels component
-library(stacks) # For model stacking
-library(C50) # If using C5.0 boosted trees
+library(text2vec)
+library(textrecipes)
+library(glmnet)
+library(ranger)
+library(parsnip)
+library(stacks)
+library(C50)
 
 source("R/server/server_shared.R")
 source("R/ui/ui_shared.R")
@@ -101,6 +101,7 @@ ui <- page_fluid(
     team_ui("team"),
     detail_ui("detail"),
     interaction_ui("interaction"),
+    overview_ui("overview"),
     ban_ui("ban"),
     prediction_ui("prediction"), # Add this line
     nav_item(
@@ -183,6 +184,7 @@ server <- function(input, output, session) {
   team_server("team", all_data_reactive(), app_data)
   detail_server("detail", all_data_reactive())
   ban_server("ban", all_bans_reactive())
+  overview_server("overview", all_data_reactive())
   interaction_server("interaction", all_data_reactive())
   prediction_server("prediction", app_data)
 }

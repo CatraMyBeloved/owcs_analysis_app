@@ -8,8 +8,8 @@ prediction_ui <- function(id) {
       sidebar = sidebar(
         # Model selection
         selectInput(ns("modelSelection"), "Select Model",
-          choices = c("Random Forest", "Boosted Tree", "Stacked Model"),
-          selected = "Stacked Model"
+          choices = c("Random Forest", "Boosted Tree"),
+          selected = "Random Forest"
         ),
 
         # Map selection

@@ -15,27 +15,12 @@ overview_ui <- function(id) {
     "Overview",
     layout_sidebar(
       sidebar = sidebar(
-        helpText("Select criteria to filter composition data."),
-        # Using shared filter components
-        week_filter(ns("weekFilter")),
         region_filter(ns("regionFilter")),
-        mode_filter(ns("modeFilter")),
         role_filter(ns("roleFilter"))
       ),
       card(
-        card_header("General Pickrates - Plot"),
-        card_body(
-          sliderInput(ns("topnPickrates"), "Top N heroes to show",
-            min = 1, max = 20, value = 10
-          ),
-          plotOutput(ns("PickratesVis"))
-        )
-      ),
-      card(
-        card_header("General Pickrates"),
-        card_body(
-          dataTableOutput(ns("Pickrates"))
-        )
+        card_header("Hero Popularity per Week"),
+        plotOutput(ns("popularityVis"))
       )
     )
   )

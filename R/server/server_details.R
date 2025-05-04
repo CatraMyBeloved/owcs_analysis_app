@@ -22,7 +22,7 @@ detail_server <- function(id, all_data) {
 
     filtered_data_details <- reactive({
       filtered_data_weeks() |>
-        filter((team_name == input$teamSpecificSelection) & (map_name == input$mapSpecificSelection))
+        filter((team_name == input$detailTeamSpecificSelection) & (map_name == input$detailMapSpecificSelection))
     })
 
     general_pickrates <- reactive({
@@ -32,6 +32,8 @@ detail_server <- function(id, all_data) {
     map_pickrates <- reactive({
       result <- calculate_weighted_pickrates(filtered_data_map_specific())
     })
+
+    #-----------Map Specific Section---------------
 
     output$mapSpecificPickrates <- renderPlot({
       data <- map_pickrates()
@@ -191,6 +193,7 @@ detail_server <- function(id, all_data) {
         scale_color_manual(values = quadrant_colors)
     })
 
+    #-------------Team Specific Section-------------
     team_pickrates <- reactive({
       result <- calculate_weighted_pickrates(filtered_data_team_specific())
     })
@@ -356,5 +359,7 @@ detail_server <- function(id, all_data) {
         guides(color = "none") +
         scale_color_manual(values = quadrant_colors)
     })
+
+    #----------------Detail Specific Section------------------
   })
 }

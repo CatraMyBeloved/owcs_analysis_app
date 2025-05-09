@@ -27,14 +27,15 @@ prediction_ui <- function(id) {
         p("Predictions are most accurate for common matchups and bans seen in previous tournaments.")
       ),
 
-      # Main content - Teams and Bans
+      # Main content - Teams and Bans (removed cards, using direct column layout)
       card(
         card_header("Team Matchup"),
-        layout_column_wrap(
-          width = 1 / 2,
-          # Team 1
-          card(
-            card_header("Team 1"),
+
+        # Remove the nested cards and use direct columns
+        fluidRow(
+          column(
+            width = 6,
+            h4("Team 1"),
             selectInput(ns("team1Selection"), "Team Name",
               choices = team_list
             ),
@@ -42,9 +43,9 @@ prediction_ui <- function(id) {
               choices = hero_list
             )
           ),
-          # Team 2
-          card(
-            card_header("Team 2"),
+          column(
+            width = 6,
+            h4("Team 2"),
             selectInput(ns("team2Selection"), "Team Name",
               choices = team_list
             ),
@@ -55,7 +56,8 @@ prediction_ui <- function(id) {
         ),
 
         # Prediction results
-        card(
+        div(
+          style = "margin-top: 20px;",
           card_header("Prediction"),
           layout_column_wrap(
             width = 1 / 2,
@@ -71,9 +73,12 @@ prediction_ui <- function(id) {
             )
           )
         ),
-        actionButton(ns("predictButton"), "Make Prediction",
-          class = "btn-lg btn-primary",
-          width = "100%"
+        div(
+          style = "margin-top: 20px;",
+          actionButton(ns("predictButton"), "Make Prediction",
+            class = "btn-lg btn-primary",
+            width = "100%"
+          )
         )
       )
     )

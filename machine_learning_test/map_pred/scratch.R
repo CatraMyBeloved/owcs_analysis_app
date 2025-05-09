@@ -13,4 +13,3 @@ final_fitted_model <- final_workflow %>%
   fit(data = data_prep)
 
 saveRDS(final_fitted_model, "models/c5_model_final.rds")
-

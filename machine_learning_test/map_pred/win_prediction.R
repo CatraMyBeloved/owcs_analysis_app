@@ -61,7 +61,7 @@ recipe_pred <- recipe(iswin ~ ., data = training(data_split)) |>
 folds <- vfold_cv(training(data_split), v = 5, strata = iswin)
 
 test_rf <- rand_forest(
-  trees = 1500,
+  trees = 600,
   mtry = 30,
   min_n = 1
 ) |>

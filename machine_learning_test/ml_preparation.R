@@ -105,3 +105,13 @@ predictors_bans <- bans |>
   inner_join(bans, by = "match_map_id", relationship = "many-to-many", suffix = c("", "_opp")) |>
   filter(team_id != team_id_opp) |>
   select(-first_bool, -team_id_opp, -first_bool_opp)
+
+# Run this in your main app to extract required data
+teams_minimal <- teams %>% select(team_id, team_name, region)
+heroes_minimal <- heroes %>% select(hero_id, hero_name, role)
+maps_minimal <- maps %>% select(map_id, map_name, mode)
+
+# Save as RDS files for the prediction app
+saveRDS(teams_minimal, "data/teams.rds")
+saveRDS(heroes_minimal, "data/heroes.rds")
+saveRDS(maps_minimal, "data/maps.rds")

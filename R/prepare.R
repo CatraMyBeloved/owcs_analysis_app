@@ -20,9 +20,9 @@ if (!download_success) {
 }
 
 # Create team, hero and map lists for later use in filters
-team_list <- as.list(unique(teams$team_name))
-hero_list <- as.list(unique(heroes$hero_name))
-map_list <- as.list(unique(maps$map_name))
+team_list <- as.list(sort(unique(teams$team_name)))
+hero_list <- as.list(sort(unique(heroes$hero_name)))
+map_list <- as.list(sort(unique(maps$map_name)))
 
 # Make sure they are available in the global environment
 assign("team_list", team_list, envir = .GlobalEnv)
